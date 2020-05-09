@@ -20,10 +20,23 @@ Happily accepting issues to have discussions on related topics.
 
 At this early stage, Reseda aims to explore the various domains as a small, decomposed problems. Examples include:
 
-* State & Reactivity
+* [State & Reactivity](doc/state-reactivity.md)
 * Changing state
 * Event-based architecture
 * Side-effects (IO/timeouts/etc)
 * Routing, code-splitting, [Suspense](https://reactjs.org/docs/react-api.html#suspense) & [Render-as-you-fetch](https://reactjs.org/docs/concurrent-mode-suspense.html#approach-3-render-as-you-fetch-using-suspense)
 
 With the goal being to provide one library per problem. The libraries should be composable with each other to build bespoke frameworks (a la carte). Perhaps a natural framework will also arise from all this work, perhaps not.
+
+
+## License
+
+```
+Copyright (c) Orestis Markou. All rights reserved. The use and
+distribution terms for this software are covered by the Eclipse
+Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+which can be found in the file epl-v10.html at the root of this
+distribution. By using this software in any fashion, you are
+agreeing to be bound by the terms of this license. You must
+not remove this notice, or any other, from this software.
+```
