@@ -47,17 +47,6 @@
 
 (defonce app-store (new-store-2 app-state))
 
-
-
-(defn current-date-changed [date]
-  (js/console.log "current date-changed")
-  (let [apod (fetch-apod date)]
-    (js/console.log "current date changed, new apod" apod)
-    (swap! app-state assoc :apod apod)))
-
-#_(defonce subscriptions 
-  (reseda.state/subscribe app-store :date current-date-changed))
-
 (defn DatePicker []
   (let [current-date (useStore2 app-store :date)]
     ($ "div" nil
@@ -66,8 +55,7 @@
                                          new-apod (fetch-apod new-date)]
                                      (swap! app-state assoc
                                             :date new-date
-                                            :apod new-apod
-                                            )))}
+                                            :apod new-apod)))}
           "Previous Day")
        ($ "span" nil (str (date->query current-date)))
        #_($ "button" #js {:onClick (fn [] (swap! app-state update :date
@@ -93,7 +81,7 @@
   (js/console.log "rendering apod component" props)
   (let [apod (:apod (bean props))]
     ($ "div" #js {:style #js {:width "100%"}}
-       ($ "h3" nil (:title apod))
+       ($ "h3" nil (:date apod) ": " (:title apod))
        ($ ApodMedia #js {:url (:url apod)
                          :suspense-url (:suspense-url apod)
                          :media_type (:media_type apod)})
@@ -116,5 +104,8 @@
 
 (comment
   (:apod @app-state)
+  (swap! app-state assoc :date (js/Date.) :apod (just-suspend))
+  (swap! app-state assoc :date (js/Date.) :apod (fetch-apod now))
+
   (js/console.log @(:suspense-url @(:apod @app-state)))
   )
