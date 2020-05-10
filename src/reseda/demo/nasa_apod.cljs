@@ -5,19 +5,12 @@
             [cljs-bean.core :refer [bean]]
             ["react" :as react]))
 
-
-(defonce app-state 
-  (atom {:date (js/Date.)
-         :apod (just-suspend)}))
-
-(defonce app-store (new-store-2 app-state))
-
 (def api-key "HquDsZLQArdVX1iaFoZGnWMD1AvoOkUEhlTtboCe" #_"DEMO_KEY")
 
 (defn date->query [date]
   (let [d (.getDate date)
         m (-> (.getMonth date)
-              inc)              
+              inc)
         y (.getFullYear date)]
     (str y "-" (when (< m 10) "0") m "-" (when (< d 10) "0") d)))
 
@@ -30,8 +23,8 @@
 
 (defn change-date [d amount op]
   (-> (.getTime d)
-       (op (* amount day-in-millis))
-       (js/Date.)))
+      (op (* amount day-in-millis))
+      (js/Date.)))
 
 (defn fetch-apod [date]
   (-> date
@@ -46,6 +39,15 @@
                  (assoc apod :suspense-url (suspending-image (:url apod)))
                  apod)))
       (suspending-value)))
+
+(def now (js/Date.))
+(defonce app-state 
+  (atom {:date now
+         :apod (fetch-apod now)}))
+
+(defonce app-store (new-store-2 app-state))
+
+
 
 (defn current-date-changed [date]
   (js/console.log "current date-changed")
@@ -77,7 +79,7 @@
     (js/console.log "loading apod media" suspense-url url media_type)
     (case media_type
       "image" ($ "img" #js {:style #js {:width "100%"}
-                            :src url #_@suspense-url})
+                            :src @suspense-url})
       "video" ($ "iframe" #js {:src url
                                :type "text/html"
                                :width "640px"
