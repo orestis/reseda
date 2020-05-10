@@ -2,6 +2,7 @@
   (:require
    [reseda.demo.util :refer [$]]
    [reseda.demo.store :as demo-store]
+   [reseda.demo.nasa-apod :as nasa-apod]
    ["react-dom" :as react-dom]))
 
 
@@ -9,7 +10,9 @@
 (defn Main []
   ($ "div" nil 
      ($ "h1" nil "Reseda Demos")
-     ($ demo-store/StoreDemo)))
+     ($ "hr")
+     ($ demo-store/StoreDemo)     
+     ($ nasa-apod/NasaApodDemo)))
 
 (defonce react-root
   (delay (-> (js/document.getElementById "app")

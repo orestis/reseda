@@ -75,3 +75,6 @@
      ($ "h1" nil "BMI Calculator")
      ($ "div" #js {:style #js {:width "30em"}}
         ($ BmiComponent))))
+
+(comment
+  @(.-subs bmi-store))
