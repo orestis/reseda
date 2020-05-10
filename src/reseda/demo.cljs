@@ -1,15 +1,15 @@
 (ns reseda.demo
-  (:require ["react" :as react]
-            ["react-dom" :as react-dom]))
+  (:require
+   [reseda.demo.util :refer [$]]
+   [reseda.demo.store :as demo-store]
+   ["react-dom" :as react-dom]))
 
-(defn $
-  ([el]
-   ($ el nil))
-  ([el props & children]
-   (apply react/createElement el props children)))
+
 
 (defn Main []
-  ($ "div" nil "Hello Reseda"))
+  ($ "div" nil 
+     ($ "h1" nil "Reseda Demos")
+     ($ demo-store/StoreDemo)))
 
 (defonce react-root
   (delay (-> (js/document.getElementById "app")

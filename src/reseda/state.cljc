@@ -1,6 +1,10 @@
 (ns reseda.state
   (:require [nano-id.core :refer [nano-id]]))
 
+;; TODO: expose subscriptions
+;; TODO: timing?
+;; TODO: custom equality
+;; TODO: caching / deduplication
 (defprotocol IStore
   (-trigger-subs [this old-state new-state])
   (-get-value [this selector])
@@ -9,7 +13,8 @@
   (subscribe [this selector on-change])
   (unsubscribe [this k]))
 
-
+;; TODO: no need for atom for subs, could use
+;; a mutable field for performance
 (deftype Store [backing subs watch-key]
   IStore
   (destroy [this]

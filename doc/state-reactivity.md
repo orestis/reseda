@@ -4,6 +4,10 @@ Clojure already provides a perfectly good approach to state: immutable data stru
 
 On top of this backing store, with some simple React Hooks, components can selectively re-render when the part of the state they are interested in has changed. This is an abstraction that encapsulates an atom and deals with subscriptions.
 
+## REPL and development experience
+
+It's a goal to be able to use the REPL to inspect and manipulate the state. This is reflected by exposing the backing store atom directly, and by having protocol methods that can inspect and manipulate the state of the store.
+
 ## Subscriptions & Selectors
 
 We don't want to re-render the whole component tree when the root atom changes, so components should be able to subscribe to only part of the state, using a "selector" that takes the whole state and returns the interesting part. For maximum flexibility, selectors are just functions. Supporting path-based selectors (for `get-in` like usage) or even more complex selectors ([Specter](https://github.com/redplanetlabs/specter), [Meander](https://github.com/noprompt/meander)) can be handled at the next abstraction level or even the application level.

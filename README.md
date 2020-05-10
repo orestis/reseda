@@ -28,6 +28,11 @@ At this early stage, Reseda aims to explore the various domains as a small, deco
 
 With the goal being to provide one library per problem. The libraries should be composable with each other to build bespoke frameworks (a la carte). Perhaps a natural framework will also arise from all this work, perhaps not.
 
+## Non-goals
+
+* Creating React elements via hiccup or other means. There is already a lot of exploration happening in the space, with libraries such as [hx](https://github.com/Lokeh/hx) and [helix](https://github.com/Lokeh/helix), and Hiccup parsers such as [Hicada](https://github.com/rauhs/hicada) and [Sablono](https://github.com/r0man/sablono).
+
+* Server-side rendering (Node or JVM). I'm not personally interested in this for the kind of applications I develop. However once the progressive hydration story of React stabilises, it might be interesting to revisit.
 
 ## License
 
