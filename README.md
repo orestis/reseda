@@ -34,6 +34,10 @@ With the goal being to provide one library per problem. The libraries should be 
 
 * Server-side rendering (Node or JVM). I'm not personally interested in this for the kind of applications I develop. However once the progressive hydration story of React stabilises, it might be interesting to revisit.
 
+## Demo
+
+Run `clojure -A:demo:shadow-cljs watch demo`
+
 ## License
 
 ```

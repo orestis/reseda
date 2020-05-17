@@ -1,6 +1,6 @@
 {:deps true
  :builds
-{:app {:target :browser
+{:demo {:target :browser
        :output-dir "public/js"
        :asset-path "/js"
 

@@ -1,26 +1,40 @@
 (ns reseda.demo
   (:require
    [reseda.demo.util :refer [$]]
-   [reseda.demo.store :as demo-store]
+   [reseda.demo.bmi :as bmi]
    [reseda.demo.nasa-apod :as nasa-apod]
    ["react-dom" :as react-dom]))
 
 
+(def react-experimental?
+  false
+  #_(boolean react-dom/unstable_createRoot))
+
+
+(defn react-root [el]
+  (if react-experimental?
+    (react-dom/unstable_createRoot el)
+    el))
+
+(defn react-render [root component]
+  (if react-experimental?
+    (.render root component)
+    (react-dom/render component root)))
 
 (defn Main []
-  ($ "div" nil 
+  ($ "div" nil
      ($ "h1" nil "Reseda Demos")
      ($ "hr")
-     ($ demo-store/StoreDemo)     
+     ($ bmi/StoreDemo)
      ($ nasa-apod/NasaApodDemo)))
 
-(defonce react-root
+(defonce root
   (delay (-> (js/document.getElementById "app")
-             (react-dom/unstable_createRoot))))
+             (react-root))))
 
 (defn ^:dev/after-load start []
   (js/console.log "start")
-  (.render @react-root ($ Main)))
+  (react-render @root ($ Main)))
 
 (defn ^:export init []
   (js/console.log "init")

@@ -1,4 +1,4 @@
-(ns reseda.demo.store
+(ns reseda.demo.bmi
   (:require
    [cljs-bean.core :refer [bean]]
    [reseda.demo.util :refer [$]]

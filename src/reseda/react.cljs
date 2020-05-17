@@ -47,7 +47,6 @@
     (write-all writer "#reseda.react.Suspending " (pr-str {:loaded loaded :value value :error error :promise promise})    ))
   IDeref
   (-deref [this]
-          (println "derefing" this)
     (cond
       (.-loaded this) (.-value this)
       (.-error this)  (throw (.-error this))
@@ -59,7 +58,6 @@
   (let [s (Suspending. false nil promise nil)]
     (.then promise
            (fn [value]
-             (js/console.log "suspending value resolved" value)
              (set! (.-value s) value)
              (set! (.-loaded s) true)
              value)
@@ -67,48 +65,15 @@
              (set! (.-error s) error)))
     s))
 
-(defn just-suspend []
-  (suspending-value (js/Promise. (fn [_ _]))))
-
 (defn suspending-image [url]
   (let [img (js/Image.)
         p (js/Promise. 
            (fn [resolve reject]
-             (js/console.log "suspending image" url)
              (.addEventListener img "load"
                                 (fn []
-                                  (js/console.log "IMG LOAD" url)
                                   (resolve url)))
              (.addEventListener img "error" 
                                 (fn []
-                                  (js/console.log "ERROR" img url)
                                   (reject url)))
              (set! (.-src img) url)))]
     (suspending-value p)))
-
-
-
-(defn new-store-2 [backing]
-  (let [ms (react/createMutableSource backing (fn get-version [x]
-                                                (deref x)))]
-    ms))
-
-
-(defn atom-subscribe [a cb]
-  (let [atom-cb (fn [_ _ _ state]
-                  (println "atom changed state" state)
-                  (cb state))]
-    (let [id (random-uuid)]
-      (println "atom-subscribe" a cb id)
-      (add-watch a id atom-cb)
-      #(remove-watch a id))))
-
-
-(defn useStore2 [ms selector]
-  (let [get-snapshot (react/useCallback #(selector (deref %)) #js [selector])]
-    (js/console.log "useStore2" selector)
-    (let [value (react/useMutableSource ms get-snapshot atom-subscribe)]
-      (println "got value" value "for selector " selector)
-      value)
-    
-    ))
