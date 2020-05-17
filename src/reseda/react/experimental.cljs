@@ -1,6 +1,7 @@
 (ns reseda.react.experimental
   (:require 
    [reseda.state :as rs]
+   [reseda.react :as rr]
    ["react" :as react]))
 
 (defn wrap-store [store]
@@ -12,10 +13,13 @@
 
 
 (defn useStore [ms selector]
-  (let [subscribe (fn [store cb]
-                    (let [k (rs/subscribe store selector cb)]
-                      #(rs/unsubscribe store k)))
-        get-snapshot #(rs/-get-value % selector)
+  (let [selector' (rr/useValue selector)
+        subscribe (react/useCallback (fn [store cb]
+                                       (let [k (rs/subscribe store selector' cb)]
+                                         (fn unsub []
+                                           (rs/unsubscribe store k))))
+                                     #js [selector'])
+        get-snapshot (react/useCallback #(rs/-get-value % selector') #js [selector'])
         value (react/useMutableSource ms get-snapshot subscribe)]
     value))
 

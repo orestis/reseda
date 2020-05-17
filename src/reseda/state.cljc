@@ -32,7 +32,7 @@
     (selector @backing))
 
   (subscribe [this selector on-change]
-    (let [k (random-uuid)]
+    (let [k (nano-id)]
       (swap! subs assoc k [selector on-change])
       k))
 

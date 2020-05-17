@@ -7,7 +7,8 @@
 
 
 (def react-experimental?
-  false
+;  false
+  true
   #_(boolean react-dom/unstable_createRoot))
 
 

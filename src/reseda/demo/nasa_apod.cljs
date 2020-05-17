@@ -46,6 +46,8 @@
 
 (defonce app-store (rs/new-store app-state))
 (defonce ms-store (rre/wrap-store app-store))
+(def the-store ms-store)
+(def useStore rre/useStore)
 
 (defn date-button-clicked [current-date direction]
   (let [new-date (change-date current-date direction)]
@@ -55,14 +57,18 @@
              :apod (fetch-apod new-date)))))
 
 (defn DatePicker []
-  (let [current-date (rre/useStore ms-store :date)]
+  (let [current-date (useStore the-store :date)
+        [startTransition isPending] (react/unstable_useTransition #js {:timeoutMs 1500})]
     ($ "div" nil
        ($ "button" #js {:onClick (fn []
-                                   (date-button-clicked current-date -1))}
+                                   (startTransition #(date-button-clicked current-date -1)))}
           "Previous Day")
-       ($ "span" nil (str (date->query current-date)))
+       ($ "span" #js {:style (if isPending
+                               #js {:color "grey"}
+                               #js {:color "black"})}
+          (str (date->query current-date)))
        ($ "button" #js {:onClick (fn []
-                                   (date-button-clicked current-date +1))}
+                                   (startTransition #(date-button-clicked current-date +1)))}
           "Next Day"))))
 
 (defn ApodMedia [props]
@@ -90,7 +96,7 @@
        ($ "p" nil (:explanation apod)))))
 
 (defn ApodLoader []
-  (let [apod (rre/useStore ms-store :apod)]
+  (let [apod (useStore the-store :apod)]
     ($ ApodComponent #js {:apod @apod})))
 
 
@@ -104,7 +110,6 @@
 
 (comment
   (:apod @app-state)
-  (swap! app-state assoc :date (js/Date.) :apod (rr/just-suspend))
   (swap! app-state assoc :date (js/Date.) :apod (fetch-apod now))
 
   (js/console.log @(:suspense-url @(:apod @app-state)))
