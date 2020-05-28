@@ -59,13 +59,14 @@
 (defn DatePicker []
   (let [current-date (useStore the-store :date)
         [startTransition isPending] (react/unstable_useTransition #js {:timeoutMs 1500})]
-    ($ "div" nil
+    ($ "div" #js {:style #js {:display "flex"
+                              :justifyContent "space-between"
+                              :alignItems "center"}}
        ($ "button" #js {:onClick (fn []
                                    (startTransition #(date-button-clicked current-date -1)))}
           "Previous Day")
-       ($ "span" #js {:style (if isPending
-                               #js {:color "grey"}
-                               #js {:color "black"})}
+       ($ "strong" #js {:style (when isPending
+                               #js {:opacity "50%"})}
           (str (date->query current-date)))
        ($ "button" #js {:onClick (fn []
                                    (startTransition #(date-button-clicked current-date +1)))}
@@ -87,13 +88,17 @@
 
 (defn ApodComponent [props]
   (let [apod (:apod (bean props))]
-    ($ "div" #js {:style #js {:width "100%"}}
-       ($ "h3" nil (:date apod) ": " (:title apod))
-       ($ ApodMedia #js {:url (:url apod)
-                         :suspense-url (:suspense-url apod)
-                         :media_type (:media_type apod)})
-       ($ "h6" nil "Copyright: " (:copyright apod))
-       ($ "p" nil (:explanation apod)))))
+    ($ "article" #js {:style #js {:width "100%"}}
+       ($ "h4" nil (:title apod))
+       ($ "section" nil
+          ($ "figure" nil
+             ($ ApodMedia #js {:url (:url apod)
+                               :suspense-url (:suspense-url apod)
+                               :media_type (:media_type apod)})
+             ($ "figcaption" nil
+                (:date apod) " "
+                "Copyright: " (:copyright apod)))
+          ($ "p" nil (:explanation apod))))))
 
 (defn ApodLoader []
   (let [apod (useStore the-store :apod)]
@@ -101,10 +106,11 @@
 
 
 (defn NasaApodDemo []
-  ($ "div" nil
-     ($ "h1" nil "Astronomy Picture of the day")
-     ($ "div" #js {:style #js {:width "30em"}}
+  ($ "section" nil
+     ($ "h2" nil "Astronomy Picture of the day")
+     ($ "div" #js {}
         ($ DatePicker)
+        ($ "hr")
         ($ react/Suspense #js {:fallback ($ "div" nil "Loading apod...")}
            ($ ApodLoader)))))
 

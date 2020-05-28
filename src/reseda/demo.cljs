@@ -23,11 +23,13 @@
     (react-dom/render component root)))
 
 (defn Main []
-  ($ "div" nil
-     ($ "h1" nil "Reseda Demos")
+  ($ "main" nil
+     ($ "header" nil "Reseda Demos")     
+     ($ "article" nil
+        ($ bmi/StoreDemo))
      ($ "hr")
-     ($ bmi/StoreDemo)
-     ($ nasa-apod/NasaApodDemo)))
+     ($ "article" nil
+        ($ nasa-apod/NasaApodDemo))))
 
 (defonce root
   (delay (-> (js/document.getElementById "app")

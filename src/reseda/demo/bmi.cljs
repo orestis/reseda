@@ -48,31 +48,34 @@
                            (< bmi 25) ["inherit" "normal"]
                            (< bmi 30) ["orange" "overweight"]
                            :else ["red" "obese"])]
-    ($ "div" nil
-       ($ "h3" nil "BMI calculator")
-       ($ "div" nil "Height: " (int height) "cm"
+    ($ "form" nil       
+       ($ "fieldset" nil
+          ($ "legend" nil "BMI calculator")          
+          ($ "label" nil "Height: " (int height) "cm")
           ($ Slider #js {:param :height
                          :value height
                          :min 100
                          :max 220
-                         :invalidates :bmi}))
-       ($ "div" nil "Weight: " (int weight) "kg"
-          ($ Slider #js {:param :weight
-                         :value weight
-                         :min 30
-                         :max 150
-                         :invalidates :bmi}))
-       ($ "div" nil "BMI: " (int bmi) " "
-          ($ "span" #js {:style #js {:color color}} diagnose)
-          ($ Slider #js {:param :bmi
-                         :value bmi
-                         :min 10
-                         :max 50
-                         :invalidates :weight})))))
+                         :invalidates :bmi})
+          ($ "div" nil 
+             ($ "label" nil "Weight: " (int weight) "kg")
+             ($ Slider #js {:param :weight
+                            :value weight
+                            :min 30
+                            :max 150
+                            :invalidates :bmi}))
+          ($ "div" nil 
+             ($ "label" nil "BMI: " (int bmi) " ")
+             ($ "span" #js {:style #js {:color color}} diagnose)
+             ($ Slider #js {:param :bmi
+                            :value bmi
+                            :min 10
+                            :max 50
+                            :invalidates :weight}))))))
 
 (defn StoreDemo []
   ($ "div" nil
-     ($ "h1" nil "BMI Calculator")
+     ($ "h2" nil "BMI Calculator")
      ($ "div" #js {:style #js {:width "30em"}}
         ($ BmiComponent))))
 
