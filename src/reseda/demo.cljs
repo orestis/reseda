@@ -3,6 +3,7 @@
    [reseda.demo.util :refer [$]]
    [reseda.demo.bmi :as bmi]
    [reseda.demo.nasa-apod :as nasa-apod]
+   [reseda.demo.lifecycle :as lifecycle]
    ["react-dom" :as react-dom]))
 
 
@@ -24,7 +25,9 @@
 
 (defn Main []
   ($ "main" nil
-     ($ "header" nil "Reseda Demos")     
+     ($ "header" nil ($ "h1" nil "Reseda Demos"))
+     ($ "article" nil ($ lifecycle/LifecycleDemo))
+     ($ "hr")
      ($ "article" nil
         ($ bmi/StoreDemo))
      ($ "hr")
