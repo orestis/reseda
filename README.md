@@ -36,7 +36,7 @@ With the goal being to provide one library per problem. The libraries should be 
 
 ## Demo
 
-Run `clojure -A:demo:shadow-cljs watch demo`
+There's various demos at [src/reseda/demo](src/reseda/demo). You can follow along at https://reseda.orestis.gr or run `clojure -A:demo:shadow-cljs watch demo`
 
 ## License
 
