@@ -4,6 +4,7 @@
    [reseda.demo.bmi :as bmi]
    [reseda.demo.nasa-apod :as nasa-apod]
    [reseda.demo.lifecycle :as lifecycle]
+   [reseda.demo.transitions :as transitions]
    ["react-dom" :as react-dom]))
 
 
@@ -26,6 +27,10 @@
 (defn Main []
   ($ "main" nil
      ($ "header" nil ($ "h1" nil "Reseda Demos"))
+     ($ "article" nil
+        ($ transitions/TransitionsDemo)
+        ($ transitions/TransitionsDemoStore))
+     ($ "hr")
      ($ "article" nil ($ lifecycle/LifecycleDemo))
      ($ "hr")
      ($ "article" nil

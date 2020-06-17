@@ -22,3 +22,8 @@
               (.send r)))]
      
      p)))
+
+
+(defn timeout-promise [value ms]
+  (js/Promise. (fn [resolve reject]
+              (js/setTimeout #(resolve value) ms))))
