@@ -14,7 +14,7 @@
 
 (def SUSPENSE-CONFIG #js {:timeoutMs 3000})
 
-(defn Button [props]
+(defn Button [^js props]
   (let [[startTransition isPending] (react/unstable_useTransition SUSPENSE-CONFIG)]
     ($ "button" #js {:onClick (fn [] ((.-onClick props) startTransition))
                      :style #js {:fontWeight (if (.-active props) "bold" "normal")}}

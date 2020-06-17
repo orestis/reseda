@@ -1,14 +1,15 @@
 {:deps true
  :builds
 {:demo {:target :browser
-       :output-dir "public/js"
-       :asset-path "/js"
+        :output-dir "public/js"
+        :asset-path "/js"
+        :compiler-options {:infer-externs :auto}
 
-       :modules
-       {:main ;; <- becomes public/js/main.js
-        {:entries [reseda.demo]}}
+        :modules
+        {:main ;; <- becomes public/js/main.js       
+         {:entries [reseda.demo]}}
 
         ;; start a development http server on http://localhost:8020
-       :devtools
-       {:http-root "public"
-        :http-port 8020}}}}
+        :devtools
+        {:http-root "public"
+         :http-port 8020}}}}
