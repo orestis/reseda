@@ -71,6 +71,9 @@
   IPrintWithWriter
   (-pr-writer [new-obj writer _]
     (write-all writer "#reseda.react.Suspending " (pr-str {:loaded loaded :value value :error error :promise promise})))
+  IPending
+  (-realized? [this]
+    (.-loaded this))
   IDeref
   (-deref [this]
     (cond
