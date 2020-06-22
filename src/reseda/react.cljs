@@ -106,3 +106,59 @@
                                   (reject url)))
              (set! (.-src img) url)))]
     (suspending-value p)))
+
+
+(defn- useForceRender []
+  (let [[_ set-state] (react/useState 0)
+        force-render! #(set-state inc)]
+    force-render!))
+
+(def __id (atom 0))
+(defn- next-id []
+  (let [id (swap! __id inc)]
+    id))
+
+(defn useSuspending 
+  "Given a Suspending object, return the version of it that was last realized, and a boolean
+   that indicates whether a new value is on the way. Can be used for a similar effect to useTransition"
+  [^Suspending value]
+  ;; keep track of the last realized suspending
+  (let [last-realized-ref (react/useRef value)
+        current-ref (react/useRef value)
+        is-pending (react/useRef false)
+        mounted-ref (react/useRef)
+        force-render! (useForceRender)]
+    (react/useLayoutEffect (fn []
+                       (set! (.-current mounted-ref) true)
+                       (fn [] (set! (.-current mounted-ref) false)))
+                     #js [])
+    (react/useLayoutEffect     
+     (fn []
+       ;; the value has changed, keep the latest version around in a ref
+       (set! (.-current current-ref) value)
+       (if (realized? value)
+        ;; if it's already realized, immediately bail out and let usual render take place
+         (do
+           (set! (.-current is-pending) false)
+           (set! (.-current last-realized-ref) value))
+        ;; otherwise, add a callback to the promise, to make
+        ;; us store it, and also re-render the component
+         (do
+           (.then (.-promise value)
+                  (fn [x]                    
+                    ;; make sure we only re-render if the latest value is the one we subscribed to
+                    ;; and of course if we're still mounted
+                    (when (and (identical? value (.-current current-ref))
+                               (.-current mounted-ref))
+                      (set! (.-current is-pending) false)
+                      (set! (.-current last-realized-ref) value)
+
+                      (force-render!))
+                    x))
+           (when (.-current mounted-ref)
+             ;; set pending to true and re-render
+             (set! (.-current is-pending) true)
+             (force-render!))))
+       js/undefined)
+     #js [value])
+    [(.-current last-realized-ref) (.-current is-pending)]))
