@@ -24,7 +24,10 @@
 
 
 ;; copy the approach of https://github.com/facebook/react/blob/master/packages/use-subscription/src/useSubscription.js#L71
-(defn useStore [store selector]
+(defn useStore
+  "React hook that will re-render the component whenever the value returned by `selector` changes.
+  NOTE: `selector` should be a stable function (not defined in-line, e.g. with useCallback) or keyword to avoid infinite re-renders."
+  [store selector]
   (let [selector (useValue selector)
         [state setState] (react/useState (fn [] {:store store
                                                  :selector selector
@@ -136,8 +139,8 @@
      (fn []
        ;; the value has changed, keep the latest version around in a ref
        (set! (.-current current-ref) value)
-       (if (realized? value)
-        ;; if it's already realized, immediately bail out and let usual render take place
+       (if (or (nil? value) (realized? value))
+        ;; if it's nil or already realized, immediately bail out and let usual render take place
          (do
            (set! (.-current is-pending) false)
            (set! (.-current last-realized-ref) value))
