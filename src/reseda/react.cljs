@@ -85,7 +85,6 @@
       :else (throw (.-promise this)))))
 
 
-
 (defn suspending-value [promise]
   (let [s (Suspending. false nil promise nil)]
     (.then promise
@@ -121,6 +120,31 @@
   (let [id (swap! __id inc)]
     id))
 
+(defn- update-refs [^Suspending value current-ref last-realized-ref is-pending force-render! mounted-ref]
+  ;; the value has changed, keep the current version around in a ref
+  (set! (.-current current-ref) value)
+  (if (or (nil? value) (realized? value))
+    ;; if it's nil or already realized, immediately bail out and let usual render take place
+    (do
+      (set! (.-current is-pending) false)
+      (set! (.-current last-realized-ref) value))   
+    (do
+      ;; otherwise, add a callback to the promise, to make us store it...
+      (.then (.-promise value)
+             (fn [x]
+               ;; make sure we only re-render if the latest value is the one we subscribed to
+               ;; and of course if we're still mounted
+               (when (and (identical? value (.-current current-ref))
+                          (.-current mounted-ref))
+                 (set! (.-current is-pending) false)
+                 (set! (.-current last-realized-ref) value)
+                 (force-render!))
+               x))
+      (when (.-current mounted-ref)
+        ;; and also re-render the component to turn on "is-pending"
+        (set! (.-current is-pending) true)
+        (force-render!)))))
+
 (defn useSuspending 
   "Given a Suspending object, return the version of it that was last realized, and a boolean
    that indicates whether a new value is on the way. Can be used for a similar effect to useTransition"
@@ -135,33 +159,7 @@
                        (set! (.-current mounted-ref) true)
                        (fn [] (set! (.-current mounted-ref) false)))
                      #js [])
-    (react/useLayoutEffect     
-     (fn []
-       ;; the value has changed, keep the latest version around in a ref
-       (set! (.-current current-ref) value)
-       (if (or (nil? value) (realized? value))
-        ;; if it's nil or already realized, immediately bail out and let usual render take place
-         (do
-           (set! (.-current is-pending) false)
-           (set! (.-current last-realized-ref) value))
-        ;; otherwise, add a callback to the promise, to make
-        ;; us store it, and also re-render the component
-         (do
-           (.then (.-promise value)
-                  (fn [x]                    
-                    ;; make sure we only re-render if the latest value is the one we subscribed to
-                    ;; and of course if we're still mounted
-                    (when (and (identical? value (.-current current-ref))
-                               (.-current mounted-ref))
-                      (set! (.-current is-pending) false)
-                      (set! (.-current last-realized-ref) value)
-
-                      (force-render!))
-                    x))
-           (when (.-current mounted-ref)
-             ;; set pending to true and re-render
-             (set! (.-current is-pending) true)
-             (force-render!))))
-       js/undefined)
-     #js [value])
+    (when-not
+     (identical? (.-current current-ref) value)
+      (update-refs value current-ref last-realized-ref is-pending force-render! mounted-ref))
     [(.-current last-realized-ref) (.-current is-pending)]))
