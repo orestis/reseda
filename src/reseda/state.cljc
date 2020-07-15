@@ -7,7 +7,7 @@
 ;; TODO: caching / deduplication
 (defprotocol IStore
   (-trigger-subs [this old-state new-state])
-  (-get-value [this selector])
+  (-get-value [this selector] [this backing selector])
 
   (destroy [this])
   (subscribe [this selector on-change])
@@ -20,16 +20,21 @@
   (destroy [this]
     (reset! subs {})
     (remove-watch backing watch-key))
-  
+
   (-trigger-subs [this old-state new-state]
     (doseq [[selector on-change] (vals @subs)]
-      (let [oldv (selector old-state)
-            newv (selector new-state)]
-        (when-not (= oldv newv)
+      (let [oldv (-get-value this old-state selector)
+            newv (-get-value this new-state selector)]
+        (when-not (= oldv newv) 
           (on-change newv)))))
 
   (-get-value [this selector]
-    (selector @backing))
+    (-get-value this @backing selector))
+  
+  (-get-value [this x selector]
+    (if (vector? selector)
+      (get-in x selector)
+      (selector x)))
 
   (subscribe [this selector on-change]
     (let [k (nano-id)]
