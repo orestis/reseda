@@ -9,9 +9,12 @@
   (-trigger-subs [this old-state new-state])
   (-get-value [this selector] [this backing selector])
 
-  (destroy [this])
-  (subscribe [this selector on-change])
-  (unsubscribe [this k]))
+  (destroy [this] "Remove all references to subscriptions and the underlying watchable.")
+  (subscribe [this selector on-change] 
+             "Subscribe to changes in the underlying watchable, using a selector function.
+             Whenever the old value and the new value (as returned by the selector) differ (based on Clojure equality),
+             call on-change with the new value. Return a unique key that can be passed to `unsubscribe`")
+  (unsubscribe [this k] "Destroy the subscription under `key`"))
 
 ;; TODO: no need for atom for subs, could use
 ;; a mutable field for performance

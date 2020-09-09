@@ -1,24 +1,28 @@
 # Reseda
 
-A set of libraries and ideas to build ClojureScript applications based on modern React.
+A Clojure-y state management library for modern React, from the future 🚀
 
 ## Rationale
 
-For a long time, React applications in ClojureScript would rely on comprehensive libraries such as [Om](https://github.com/omcljs/om), [Reagent](https://github.com/reagent-project/reagent) and [re-frame](https://github.com/day8/re-frame), [Fulcro](https://fulcro.fulcrologic.com), etc. for a big chunk of web-applications concerns and treat React as a pure view library. In particular, on top of state management, these libraries would also handle the reactivity part of React: making sure components re-render when a piece of state changes.
+For a long time, React applications in ClojureScript would rely on comprehensive libraries such as [Om](https://github.com/omcljs/om), [Reagent](https://github.com/reagent-project/reagent) and [re-frame](https://github.com/day8/re-frame), [Fulcro](https://fulcro.fulcrologic.com), etc. for a big chunk of web-application concerns, while treating React as purely a view layer. In particular, on top of state management, these libraries would also deal with reactivity: making sure components re-render when a piece of state changes.
 
-With the introduction of [Context](https://reactjs.org/docs/context.html), [Hooks](https://reactjs.org/docs/hooks-intro.html), and the (currently work-in-progress) [Concurrent Mode](https://reactjs.org/docs/concurrent-mode-intro.html), React is getting more and more opinionated about state management, while at the same time exposing lower-level primitives that can allow finer-grained control over reactivity.
+With the introduction of [Context](https://reactjs.org/docs/context.html), [Hooks](https://reactjs.org/docs/hooks-intro.html), and the (currently work-in-progress) [Concurrent Mode](https://reactjs.org/docs/concurrent-mode-intro.html), React is getting more and more opinionated about state management, while at the same time exposing lower-level primitives that can allow fine-grained control over reactivity.
 
-Reseda explores the space of using Clojure's philosophy of [Identity, State, and Values](https://www.infoq.com/presentations/Value-Identity-State-Rich-Hickey/) for state management, while leaning on React for reactivity. The result is a set of small composable namespaces that work with plain React components, which can be combined and extended to build richer abstractions according to each application needs.
+Reseda explores the space of using Clojure's philosophy of [Identity, State, and Values](https://www.infoq.com/presentations/Value-Identity-State-Rich-Hickey/) for state management, while leaning on React for reactivity. 
+
+The result is a state managment library that works with plain React components, is REPL friendly, uses plain Clojure atoms as the underlying storage mechanism, can be used both for global and local state, and can be used whenever `useState` is inadequate. 
+
+In addition, by fully embracing [Suspense for Data Fetching](https://reactjs.org/docs/concurrent-mode-suspense.html), Reseda allows you to build User Interfaces without asynchronous data fetching concerns, resulting in less moving parts in your application. And by being compatible with React Stable, it gives you a glimpse of the future today 😎
 
 ## Status
 
 Used in production at [Nosco](https://nos.co), and evolves as we explore various use cases.
 
-The API might change, and there's no direct unit tests, so use at own risk.
+The API might change (but probably not), and there's no direct unit tests 🙀, so use at your own risk.
 
-Happily accepting issues to discuss use cases, fix bugs, new features etc.
+Happily accepting issues to discuss use cases, bugs, new features etc.
 
-See [Vision][./VISION.md] for potential future additions.
+See [Vision](./VISION.md) for the original vision and potential future additions.
 
 ## Usage
 
@@ -59,11 +63,13 @@ Having the store at hand, you can subscribe to be notified whenever something in
 
 Note that the value you get is whatever the selector returns, and Clojure's equality via `=` is used to determine if a change was made. The `on-change` function receives a single argument, the new value.
 
-Obviously, you can put whatever you want inside the backing store - most usually it will be an atom, but it might be a vector or anything else that you can put in an atom. Or you can implement the `IWatchable` (CLJS) or `clojure.lang.IRef` (Clojure) for something fancier. 
+Obviously, you can put whatever you want inside the backing store - most usually it will be a map, but it might be a vector or anything else that you can put in an atom. 
+
+You can implement the `IWatchable` protocl (CLJS) or `clojure.lang.IRef` interface (Clojure) for something fancier -- e.g. to trigger subscriptions based on a websocket connection etc.
 
 ### React integration
 
-So far the code is cross-platform, but the main use of Reseda is for building UIs.
+So far the code is cross-platform, but the main use of Reseda is for building UIs with React.
 
 The basic setup is exactly the same:
 
@@ -79,13 +85,13 @@ The basic setup is exactly the same:
 (defonce store (reseda.state/new-store backing-store))
 ```
 
-You can then re-render a component whenver something changes in the store via the `useStore` hook:
+You can then re-render a component whenever something changes in the store via the `useStore` hook:
 
 ```clojure
 ;; The first render will give you whatever is in the store, and
 ;; from then on, your component will re-render whenever the value changes
 (defnc Name []
-  (let [name (useStore store [:user :name])]
+  (let [name (reseda.react/useStore store [:user :name])]
    [:div "The user's name is: " name]))
 ```
 
@@ -96,19 +102,21 @@ To make changes, simply change the underlying backing store however you see fit,
 
 ```clojure
 (defnc EditName []
-  (let [name (useStore store [:user :name])]
+  (let [name (reseda.react/useStore store [:user :name])]
     [:input {:value name
-             :on-change #(swap! backing-store assoc-in [:user :name] (-> % .-target .-value))}]))
+             :on-change #(swap! backing-store assoc-in 
+                                              [:user :name]
+                                              (-> % .-target .-value))}]))
 ```
 
-You have the entire Clojure toolbox at your disposal to make changes. Use plain maps, a statechart library, a datascript database, whatever fits your use case.
+You have the entire Clojure toolbox at your disposal to make changes. Use plain maps, a statechart library, a Datascript database, whatever fits your use case.
 
 
 ### Suspense Integration (Stable)
 
 Reseda supports [Suspense for Data Fetching](https://reactjs.org/docs/concurrent-mode-suspense.html) even in React Stable (16.13), even though it's technically not supported. 
 
-This allows you to avoid a whole bunch of asynchronous code by allowing React to suspend rendering if some remote value hasn't resolved yet.
+This allows you to avoid a whole bunch of asynchronous code by allowing React to suspend rendering if some remote value hasn't arrived yet.
 
 At the core of this support is the `Suspending` type, which you can construct by giving it a Promise:
 
@@ -144,13 +152,15 @@ The magic happens you combine a Suspending with a React Suspense Boundary:
 ```clojure
 
 (defnc RemoteName []
- ;; using a trailing * for reader clarity -- this is a Suspending and you need to deref it
- (let [data* (useStore store :data)]
+ ;; using a trailing * for reader clarity -- 
+ ;; this is a Suspending and you need to deref it
+ (let [data* (reseda.react/useStore store :data)]
    ;; notice the @ that derefs the Suspending
    [:div "The remote data is: " @data*]))
 
 (defnc Root []
- ;; see note about Suspense boundaries -- you cannot have them in the component that suspends
+ ;; see note about Suspense boundaries 
+ ;; -- you cannot have them in the same component that suspends
  [React/Suspense {:fallback (hx/f [:div "Loading..."])}
   [RemoteName]])
 ```
@@ -161,12 +171,94 @@ Read more about [Suspense in the official React Docs](https://reactjs.org/docs/r
 
 #### Additional utilities
 
-The final trick that Reseda provies (hoping that it won't be used once Suspense for data loading is stable), is the ability to show *previous versions* of a Suspending.
+The final trick that Reseda provides (hoping that it won't be used once Suspense for data loading is stable), is the ability to show *previous versions* of a Suspending value.
 
-You want to do this when showing the fallback element will provide a jarring user experience.
+You want to do this when showing the fallback element will provide a jarring user experience. For example, if you've loaded a results list, and you want to update the list as the user sorts or narrows down the search:
 
+```clojure
+(defnc SearchResults [{:keys [results*]}]
+ [:div (for [v @results*])
+         [Row {:value v}]])
+
+(defnc SearchList []
+ (let [results* (reseda.react/useStore store :results)]
+   [SearchBox {:on-change
+               (fn [text]
+                 (swap! backing-store :results (fetch-new-results text)))}]
+   [React/Suspense
+    [SearchResults {:results* results*}]]))
+```
+
+The moment you change the `:results` value of the backing store to a new Suspending, Reseda will make your component re-render, which in turn will make React suspend, meaning the previous results will be gone from the screen. Not cool.
+
+To avoid this, wrap the `Suspending` value with a `useSuspending` hook like so:
+
+```clojure
+(defnc SearchList []
+ (let [[results* loading?] (-> (reseda.react/useStore store :results) 
+                               (reseda.react/useSuspending))]
+   [SearchBox {:show-spinner loading?
+               :on-change 
+               (fn [text]
+                (swap! backing-store :results (fetch-new-results text)))}]
+   [React/Suspense
+    [SearchResults {:results* results*
+                    :loading? loading?}]]))
+```
+
+`useSuspending` will connect the passed-in `Suspending` with the lifecycle of the React component, and will always return
+the value that was realized *last* (or the only one, during the first render). It will also return a boolean that indicates that data is on the way and can be used to indicate loading states in the UI.
+
+Note: `useSuspending` will add a callback to the underlying Promise of the `Suspending`. This should be harmless and only does side-effects related to React. The actual value is passed-through unchanged.
+
+This behaviour is relatively similar to the [`useTransition` hook](https://reactjs.org/docs/concurrent-mode-reference.html#usetransition) in React experimental, but less granular and without timeout support.
 
 ### Suspense Integration (Experimental)
+
+It's been years since Concurrent Mode has been announced, and it's still experimental. However, if you're keen on using it, you can use the `reseda.react.experimental` namespace like so:
+
+```clojure
+(ns reseda.readme
+ (:require [reseda.state]
+           [reseda.react]
+           [reseda.react.experimental]
+           [hx.react :refer [defnc]]
+           ["react" :as React]))
+
+(defonce backing-store (atom {}))
+
+;; note the new name, this is not used directly
+(defonce reseda-store (reseda.state/new-store backing-store))
+
+;; you need to wrap the basic store with a version that's Concurrent-mode aware
+(defonce store (reseda.react.experimental/wrap-store reseda-store))
+
+(defnc Name []
+  ;; different flavor of useStore
+  (let [name (reseda.react.experimental/useStore store [:user :name])]
+   [:div "The user's name is: " name]))
+```
+
+Behind the scenes this is using `useMutableSource` so it's much less code than the React Stable version, and as Concurrent Mode safe as you can be with global state.
+
+### Local state
+
+While all the examples so far were dealing with global atoms and stores, you can also use Reseda for local state. You just need to make sure that React doesn't throw away your local state. You can do that with a `useRef`:
+
+```clojure
+(defnc ComplexComponent []
+ (let [backing-ref (React/useRef (atom {})
+       backing (.-current backing-ref) 
+       store-ref (React/useRef (reseda.state/new-store backing)))
+       store (.-current store-ref)]
+    [ReadOnlyComponent {:store store}
+    [WriteOnlyComponent {:backing backing}
+    [ReadWriteComponent {:store store :backing backing}]]]))
+```
+
+React will make sure that the atom and the wrapping store will stay the same during the lifecycle of the component (ie from mount to unmount), so you can pass the "current" value around as props to any child components that may need them.
+
+The separation of store and backing also makes it clear if a component is just reading values from the store or also writing values into it.
 
 ### Gotchas and advanced topics
 
@@ -180,7 +272,6 @@ Selector functions should have a consistent identity, (i.e. not re-created every
 * Functions defined via `defn` also work, since their identity doesn't change
 * Anything else has to be wrapped inside a `useCallback`
 
-#### Multiple renders
 
 Reseda doesn't try to do any batching or asynchronicity of subscriptions. This means that one change to the underlying atomwill trigger one subscription (assuming of course the selected value *does* change).
 
