@@ -152,5 +152,5 @@
         (rtl/waitFor #(query-by-text "done"))
         (.then (fn []
                  (is (= (-> (query-by-text "done")
-                            node-text) "donre"))
+                            node-text) "done"))
                  (done)))))))
