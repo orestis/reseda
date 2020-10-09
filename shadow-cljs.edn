@@ -1,21 +1,26 @@
 {:deps true
  :builds
-{:test {:target :browser-test
-        :test-dir "public-test"
-        :devtools
-        {:http-root "public-test"
-         :http-port 8021}}
+ {:test {:target :browser-test
+         :compiler-options {:infer-externs :auto}
+         :test-dir "public-test"
+         :devtools
+         {:http-root "public-test"
+          :http-port 8021}}
 
- :demo {:target :browser
-        :output-dir "public/js"
-        :asset-path "/js"
-        :compiler-options {:infer-externs :auto}
+  :ci {:target :karma
+       :compiler-options {:infer-externs :auto}
+       :output-to "public-test/ci.js"}
 
-        :modules
-        {:main ;; <- becomes public/js/main.js       
-         {:entries [reseda.demo]}}
+  :demo {:target :browser
+         :output-dir "public/js"
+         :asset-path "/js"
+         :compiler-options {:infer-externs :auto}
 
-        ;; start a development http server on http://localhost:8020
-        :devtools
-        {:http-root "public"
-         :http-port 8020}}}}
+         :modules
+         {:main ;; <- becomes public/js/main.js       
+          {:entries [reseda.demo]}}
+
+         ;; start a development http server on http://localhost:8020
+         :devtools
+         {:http-root "public"
+          :http-port 8020}}}}

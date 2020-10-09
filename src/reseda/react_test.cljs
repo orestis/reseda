@@ -106,7 +106,6 @@
       (swap! state update :v inc)
       (is (= @renders 0) "no renders until component is actually mounted")
       (let [rtl-fns (rtl/render c)]
-        (js/console.log rtl-fns)
         (is (= @renders 1) "first render")
         (swap! state update :v inc)
         (is (= @renders 2) "render on update")
