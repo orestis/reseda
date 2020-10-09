@@ -20,7 +20,7 @@ In addition, by fully embracing [Suspense for Data Fetching](https://reactjs.org
 
 Used in production at [Nosco](https://nos.co), and evolves as we explore various use cases.
 
-The API might change (but probably not), and there's no direct unit tests 🙀, so use at your own risk.
+The API might change (but probably not), and there's some unit test coverage but still – use at your own risk.
 
 Happily accepting issues to discuss use cases, bugs, new features etc.
 
