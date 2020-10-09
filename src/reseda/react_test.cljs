@@ -113,3 +113,44 @@
         (is (= @renders 2) "no render on unmount")
         (swap! state update :v inc)
         (is (= @renders 2) "no render after unmount"))))
+
+
+(defn make-promise []
+  (let [fs (atom nil)
+        p (js/Promise. (fn [resolve reject]
+                         (reset! fs {:resolve resolve
+                                     :reject reject})))]
+    (assoc @fs :promise p)))
+
+(defn SuspendImpl [js-props]
+  (let [{:keys [susp f]} (.-props js-props)]
+    (js/console.log susp f)
+    (f @susp)))
+
+(defn SuspenseRender [js-props]
+  ($ "div" nil
+     ($ react/Suspense #js {:fallback ($ "div" nil "FB")}
+        ($ SuspendImpl js-props))))
+
+(defn render-susp
+  ([susp] (render-susp susp str))
+  ([susp f]
+   ($ SuspenseRender #js {:props {:susp susp
+                                  :f f}})))
+
+(deftest suspending
+  (t/async
+    done
+    (let [{:keys [promise resolve]} (make-promise)
+          susp (rr/suspending-value promise)
+          c (render-susp susp)]
+      (rtl/render c)
+      (is (= (-> (query-by-text "FB")
+                 node-text) "FB"))
+      (rtl/act #(resolve "done"))
+      (->
+        (rtl/waitFor #(query-by-text "done"))
+        (.then (fn []
+                 (is (= (-> (query-by-text "done")
+                            node-text) "donre"))
+                 (done)))))))
