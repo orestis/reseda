@@ -1,5 +1,7 @@
 # Reseda
 
+![tests](https://github.com/orestis/reseda/workflows/tests/badge.svg)
+
 A Clojure-y state management library for modern React, from the future 🚀
 
 ## Rationale
