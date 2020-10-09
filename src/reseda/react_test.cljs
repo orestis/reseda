@@ -1,6 +1,7 @@
 (ns reseda.react-test
   (:require [clojure.test :as t :refer [deftest is testing]]
             [clojure.string :as string]
+            [kitchen-async.promise :as p]
             [reseda.state :as rs]
             [reseda.react :as rr]
             ["react" :as react]
@@ -138,19 +139,67 @@
    ($ SuspenseRender #js {:props {:susp susp
                                   :f f}})))
 
-(deftest suspending
+(deftest suspending-resolve
   (t/async
-    done
+    done!
+    (let [{:keys [promise resolve]} (make-promise)
+          susp (rr/suspending-value promise)]
+      (is (= false (rr/-resolved? susp)))
+      (is (= false (rr/-rejected? susp)))
+      (is (= false (realized? susp)))
+      (try
+        (deref susp)
+        (catch :default x
+          (is (= true (identical? x promise)))))
+      
+      (resolve :foo)
+      (p/try
+        promise
+        (is (= true (rr/-resolved? susp)))
+        (is (= false (rr/-rejected? susp)))
+        (is (= true (realized? susp)))
+        (is (= :foo (deref susp)))
+        (p/finally 
+          (done!))))))
+
+(deftest suspending-reject
+  (t/async
+    done!
+    (let [{:keys [promise reject]} (make-promise)
+          susp (rr/suspending-value promise)
+          err (js/Error. "foo")]
+      (is (= false (rr/-resolved? susp)))
+      (is (= false (rr/-rejected? susp)))
+      (is (= false (realized? susp)))
+      
+      (reject err)
+      (p/try
+        promise
+        (p/catch js/Error x
+          (is (= false (rr/-resolved? susp)))
+          (is (= true (rr/-rejected? susp)))
+          (is (= true (realized? susp)))
+          (is (thrown-with-msg? js/Error
+                               #"foo"
+                               (deref susp)))
+          (is (= err x)))
+        (p/finally 
+          (done!))))))
+
+(deftest suspending-integration
+  (t/async
+    done!
     (let [{:keys [promise resolve]} (make-promise)
           susp (rr/suspending-value promise)
           c (render-susp susp)]
       (rtl/render c)
       (is (= (-> (query-by-text "FB")
                  node-text) "FB"))
-      (rtl/act #(resolve "done"))
-      (->
+      (p/try
+        (rtl/act #(do (resolve "done")
+                      promise))
         (rtl/waitFor #(query-by-text "done"))
-        (.then (fn []
-                 (is (= (-> (query-by-text "done")
-                            node-text) "done"))
-                 (done)))))))
+        (is (= (-> (query-by-text "done")
+                   node-text) "done"))
+        (p/finally
+          (done!))))))
