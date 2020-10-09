@@ -1,6 +1,12 @@
 {:deps true
  :builds
-{:demo {:target :browser
+{:test {:target :browser-test
+        :test-dir "public-test"
+        :devtools
+        {:http-root "public-test"
+         :http-port 8021}}
+
+ :demo {:target :browser
         :output-dir "public/js"
         :asset-path "/js"
         :compiler-options {:infer-externs :auto}

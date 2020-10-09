@@ -26,7 +26,8 @@
 ;; copy the approach of https://github.com/facebook/react/blob/master/packages/use-subscription/src/useSubscription.js#L71
 (defn useStore
   "React hook that will re-render the component whenever the value returned by `selector` changes.
-  NOTE: `selector` should be a stable function (not defined in-line, e.g. with useCallback) or keyword to avoid infinite re-renders."
+  NOTE: `selector` should be a stable function (not defined in-line, e.g. with
+  useCallback) or keyword to avoid infinite re-renders. `selector` can also be a vector for `get-in`"
   [store selector]
   (let [selector (useValue selector)
         [state setState] (react/useState (fn [] {:store store
@@ -70,13 +71,23 @@
     @value-to-return))
 
 
+(defprotocol ISuspending
+  (-resolved? [this] "Is the underlying promise resolved?")
+  (-rejected? [this] "Is the underlying promise rejected?"))
+
 (deftype Suspending [loaded value promise error]
   IPrintWithWriter
   (-pr-writer [new-obj writer _]
-    (write-all writer "#reseda.react.Suspending " (pr-str {:loaded loaded :value value :error error :promise promise})))
+    (write-all writer "#reseda.react.Suspending " 
+               (pr-str {:loaded loaded :value value :error error :promise promise})))
+  ISuspending
+  (-resolved? [this]
+    (boolean (.-loaded this)))
+  (-rejected? [this]
+    (boolean (.-error this)))
   IPending
   (-realized? [this]
-    (.-loaded this))
+    (or (-resolved? this) (-rejected? this)))
   IDeref
   (-deref [this]
     (cond
@@ -109,6 +120,28 @@
              (set! (.-src img) url)))]
     (suspending-value p)))
 
+(defn suspending-resolved 
+  "Return a resolved Suspending that contains the value v.
+  Different than just calling (suspending-reslved (js/Promise.resolve v))
+  since it bypasses the Promise microTick queue."
+  [v]
+  (let [p (js/Promise.resolve v)
+        s (Suspending. true v p nil)]
+    s))
+
+(defn suspending-error 
+  "Return a resolved Suspening that contains the error e.
+  See `suspending-resolved` for semantics."
+  [e]
+  (let [p (js/Promise.reject e)
+        s (Suspending. false nil p e)]
+    s))
+
+(defn suspending-nil 
+  "Convenience, returns a resolved Suspending that contains nil."
+  []
+  (suspending-resolved nil))
+
 
 (defn- useForceRender []
   (let [[_ set-state] (react/useState 0)
@@ -120,24 +153,24 @@
   (let [id (swap! __id inc)]
     id))
 
-(defn- update-refs [^Suspending value current-ref last-realized-ref is-pending force-render! mounted-ref]
-  ;; the value has changed, keep the current version around in a ref
-  (set! (.-current current-ref) value)
-  (if (or (nil? value) (realized? value))
+(defn- update-refs [^Suspending susp current-ref last-realized-ref is-pending force-render! mounted-ref]
+  ;; the susp has changed, keep the current version around in a ref
+  (set! (.-current current-ref) susp)
+  (if (or (nil? susp) (realized? susp))
     ;; if it's nil or already realized, immediately bail out and let usual render take place
     (do
       (set! (.-current is-pending) false)
-      (set! (.-current last-realized-ref) value))   
+      (set! (.-current last-realized-ref) susp))   
     (do
       ;; otherwise, add a callback to the promise, to make us store it...
-      (.then (.-promise value)
+      (.then (.-promise susp)
              (fn [x]
-               ;; make sure we only re-render if the latest value is the one we subscribed to
+               ;; make sure we only re-render if the latest susp is the one we subscribed to
                ;; and of course if we're still mounted
-               (when (and (identical? value (.-current current-ref))
+               (when (and (identical? susp (.-current current-ref))
                           (.-current mounted-ref))
                  (set! (.-current is-pending) false)
-                 (set! (.-current last-realized-ref) value)
+                 (set! (.-current last-realized-ref) susp)
                  (force-render!))
                x))
       (when (.-current mounted-ref)
