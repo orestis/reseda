@@ -193,12 +193,12 @@ You want to do this when showing the fallback element will provide a jarring use
 
 The moment you change the `:results` value of the backing store to a new Suspending, Reseda will make your component re-render, which in turn will make React suspend, meaning the previous results will be gone from the screen. Not cool.
 
-To avoid this, wrap the `Suspending` value with a `useSuspending` hook like so:
+To avoid this, wrap the `Suspending` value with a `useCachedSuspending` hook like so:
 
 ```clojure
 (defnc SearchList []
  (let [[results* loading?] (-> (reseda.react/useStore store :results) 
-                               (reseda.react/useSuspending))]
+                               (reseda.react/useCachedSuspending))]
    [SearchBox {:show-spinner loading?
                :on-change 
                (fn [text]
@@ -208,10 +208,10 @@ To avoid this, wrap the `Suspending` value with a `useSuspending` hook like so:
                     :loading? loading?}]]))
 ```
 
-`useSuspending` will connect the passed-in `Suspending` with the lifecycle of the React component, and will always return
+`useCachedSuspending` will connect the passed-in `Suspending` with the lifecycle of the React component, and will always return
 the value that was realized *last* (or the only one, during the first render). It will also return a boolean that indicates that data is on the way and can be used to indicate loading states in the UI.
 
-Note: `useSuspending` will add a callback to the underlying Promise of the `Suspending`. This should be harmless and only does side-effects related to React. The actual value is passed-through unchanged.
+Note: `useCachedSuspending` will add a callback to the underlying Promise of the `Suspending`. This should be harmless and only does side-effects related to React. The actual value is passed-through unchanged.
 
 This behaviour is relatively similar to the [`useTransition` hook](https://reactjs.org/docs/concurrent-mode-reference.html#usetransition) in React experimental, but less granular and without timeout support.
 
