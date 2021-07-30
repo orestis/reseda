@@ -104,8 +104,21 @@
              (set! (.-loaded s) true)
              value)
            (fn [error]
-             (set! (.-error s) error)))
+             (set! (.-error s) error)
+             error))
     s))
+
+(defn suspending-value-noerror [promise]
+  (let [s (Suspending. false nil promise nil)]
+    (.then promise
+           (fn [value]
+             (set! (.-value s) value)
+             (set! (.-loaded s) true)
+             value)
+           (fn [error]
+             error))
+    s))
+
 
 (defn suspending-image [url]
   (let [img (js/Image.)
@@ -178,7 +191,7 @@
         (set! (.-current is-pending) true)
         (force-render!)))))
 
-(defn useSuspending 
+(defn useCachedSuspending
   "Given a Suspending object, return the version of it that was last realized, and a boolean
    that indicates whether a new value is on the way. Can be used for a similar effect to useTransition"
   [^Suspending value]
@@ -196,3 +209,5 @@
      (identical? (.-current current-ref) value)
       (update-refs value current-ref last-realized-ref is-pending force-render! mounted-ref))
     [(.-current last-realized-ref) (.-current is-pending)]))
+
+(def useSuspending useCachedSuspending)

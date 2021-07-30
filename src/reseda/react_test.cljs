@@ -186,6 +186,51 @@
         (p/finally 
           (done!))))))
 
+(deftest suspending-noerror-resolve
+  (t/async
+    done!
+    (let [{:keys [promise resolve]} (make-promise)
+          susp (rr/suspending-value-noerror promise)]
+      (is (= false (rr/-resolved? susp)))
+      (is (= false (rr/-rejected? susp)))
+      (is (= false (realized? susp)))
+      (try
+        (deref susp)
+        (catch :default x
+          (is (= true (identical? x promise)))))
+      
+      (resolve :foo)
+      (p/try
+        promise
+        (is (= true (rr/-resolved? susp)))
+        (is (= false (rr/-rejected? susp)))
+        (is (= true (realized? susp)))
+        (is (= :foo (deref susp)))
+        (p/finally 
+          (done!))))))
+
+(deftest suspending-noerror-reject
+  (t/async
+    done!
+    (let [{:keys [promise reject]} (make-promise)
+          susp (rr/suspending-value-noerror promise)
+          err (js/Error. "foo")]
+      (is (= false (rr/-resolved? susp)))
+      (is (= false (rr/-rejected? susp)))
+      (is (= false (realized? susp)))
+      
+      (reject err)
+
+      (is (= false (rr/-resolved? susp)))
+      (is (= false (rr/-rejected? susp)))
+      (is (= false (realized? susp)))
+
+      (try
+        (deref susp)
+        (catch :default x
+          (is (= true (identical? x promise)))))
+      (done!))))
+
 (deftest suspending-integration
   (t/async
     done!

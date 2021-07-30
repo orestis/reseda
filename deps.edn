@@ -5,7 +5,7 @@
  {:extra-deps {athos/kitchen-async {:sha "1f28eab4ef7126e0b8b6fd8d8887beeab7430fea"
                                     :git/url "https://github.com/athos/kitchen-async"}}}
  :demo
- {:extra-deps {cljs-bean/cljs-bean {:mvn/version "1.5.0"}}}
+ {:extra-deps {cljs-bean/cljs-bean {:mvn/version "1.7.0"}}}
  :shadow-cljs
- {:extra-deps {thheller/shadow-cljs {:mvn/version "2.11.5"}}
+ {:extra-deps {thheller/shadow-cljs {:mvn/version "2.15.2"}}
   :main-opts ["-m" "shadow.cljs.devtools.cli"]}}}
