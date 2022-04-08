@@ -4,6 +4,7 @@
    [reseda.demo.bmi :as bmi]
    [reseda.demo.nasa-apod-17 :as nasa-apod]
    [reseda.demo.lifecycle :as lifecycle]
+   [reseda.demo.wikipedia :as wikipedia]
    ;[reseda.demo.transitions :as transitions]
    ["react-dom" :as react-dom]))
 
@@ -24,6 +25,8 @@
 (defn Main []
   ($ "main" nil
      ($ "header" nil ($ "h1" nil "Reseda Demos"))
+     ($ "article" nil
+        ($ wikipedia/WikiSearchDemo))
      #_
      ($ "article" nil
         ($ transitions/TransitionsDemo)
