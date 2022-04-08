@@ -1,6 +1,8 @@
 (ns reseda.react
   (:require
    [reseda.state :as rs]
+   ["use-sync-external-store/shim" :refer [useSyncExternalStore]]
+   ;["use-sync-external-store/shim/with-selector" :refer [useSyncExternalStoreWithSelector]]
    ["react" :as react]))
 
 ;; borrowed from hx
@@ -23,52 +25,21 @@
       x')))
 
 
-;; copy the approach of https://github.com/facebook/react/blob/master/packages/use-subscription/src/useSubscription.js#L71
 (defn useStore
   "React hook that will re-render the component whenever the value returned by `selector` changes.
   NOTE: `selector` should be a stable function (not defined in-line, e.g. with
   useCallback) or keyword to avoid infinite re-renders. `selector` can also be a vector for `get-in`"
-  [store selector]
-  (let [selector (useValue selector)
-        [state setState] (react/useState (fn [] {:store store
-                                                 :selector selector
-                                                 :value (rs/-get-value store selector)}))
-        value-to-return (atom (:value state))]
-    (when (or (not= store (:store state))
-              (not= selector (:selector state)))
-      (reset! value-to-return (rs/-get-value store selector))
-      (setState {:store store
-                 :selector selector
-                 :value @value-to-return}))
-    (react/useDebugValue @value-to-return)
-    (react/useEffect
-     (fn []
-       (let [did-unsubscribe (atom false)
-             check-for-updates
-             (fn [value]
-               (when-not @did-unsubscribe
-                 (setState
-                  (fn [prev-state]
-                    (cond
-                        ;; stale subscription; store or selector changed
-                        ;; do not render for stale subscription, wait for
-                        ;; another render to be scheduled
-                      (or (not= store (:store prev-state))
-                          (not= selector (:selector prev-state)))                      
-                      prev-state
-                      ;; value is the same (store handles equality so here just check for identical)
-                      (identical? (:value prev-state) value)
-                      prev-state
-
-                      :else (assoc prev-state :value value))))))
-
-             k (rs/subscribe store selector check-for-updates)]
-         (check-for-updates @value-to-return)
-         (fn unsubscribe []
-           (reset! did-unsubscribe true)
-           (rs/unsubscribe store k))))
-     #js [store selector])
-    @value-to-return))
+  [^rs/IStore store selector]
+  (let [selector' (useValue selector)
+        subscribe (react/useCallback (fn [cb]
+                                       (let [k (rs/subscribe store selector' cb)]
+                                         (fn unsub []
+                                           (rs/unsubscribe store k))))
+                                     #js [selector'])
+        get-snapshot (react/useCallback #(rs/-get-value store selector') #js [selector'])
+        value (useSyncExternalStore subscribe get-snapshot)]
+    (react/useDebugValue value)
+    value))
 
 
 (defprotocol ISuspending

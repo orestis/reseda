@@ -10,9 +10,9 @@ For a long time, React applications in ClojureScript would rely on comprehensive
 
 With the introduction of [Context](https://reactjs.org/docs/context.html), [Hooks](https://reactjs.org/docs/hooks-intro.html), and the (currently work-in-progress) [Concurrent Mode](https://reactjs.org/docs/concurrent-mode-intro.html), React is getting more and more opinionated about state management, while at the same time exposing lower-level primitives that can allow fine-grained control over reactivity.
 
-Reseda explores the space of using Clojure's philosophy of [Identity, State, and Values](https://www.infoq.com/presentations/Value-Identity-State-Rich-Hickey/) for state management, while leaning on React for reactivity. 
+Reseda explores the space of using Clojure's philosophy of [Identity, State, and Values](https://www.infoq.com/presentations/Value-Identity-State-Rich-Hickey/) for state management, while leaning on React for reactivity.
 
-The result is a state managment library that works with plain React components, is REPL friendly, uses plain Clojure atoms as the underlying storage mechanism, can be used both for global and local state, and can be used whenever `useState` is inadequate. 
+The result is a state managment library that works with plain React components, is REPL friendly, uses plain Clojure atoms as the underlying storage mechanism, can be used both for global and local state, and can be used whenever `useState` is inadequate.
 
 In addition, by fully embracing [Suspense for Data Fetching](https://reactjs.org/docs/concurrent-mode-suspense.html), Reseda allows you to build User Interfaces without asynchronous data fetching concerns, resulting in less moving parts in your application. And by being compatible with React Stable, it gives you a glimpse of the future today 😎
 
@@ -65,7 +65,7 @@ Having the store at hand, you can subscribe to be notified whenever something in
 
 Note that the value you get is whatever the selector returns, and Clojure's equality via `=` is used to determine if a change was made. The `on-change` function receives a single argument, the new value.
 
-Obviously, you can put whatever you want inside the backing store - most usually it will be a map, but it might be a vector or anything else that you can put in an atom. 
+Obviously, you can put whatever you want inside the backing store - most usually it will be a map, but it might be a vector or anything else that you can put in an atom.
 
 You can implement the `IWatchable` protocl (CLJS) or `clojure.lang.IRef` interface (Clojure) for something fancier -- e.g. to trigger subscriptions based on a websocket connection etc.
 
@@ -76,7 +76,7 @@ So far the code is cross-platform, but the main use of Reseda is for building UI
 The basic setup is exactly the same:
 
 ```clojure
-(ns reseda.readme 
+(ns reseda.readme
   (:require [reseda.state]
             [reseda.react]
             [hx.react :refer [defnc]]))
@@ -106,7 +106,7 @@ To make changes, simply change the underlying backing store however you see fit,
 (defnc EditName []
   (let [name (reseda.react/useStore store [:user :name])]
     [:input {:value name
-             :on-change #(swap! backing-store assoc-in 
+             :on-change #(swap! backing-store assoc-in
                                               [:user :name]
                                               (-> % .-target .-value))}]))
 ```
@@ -116,7 +116,7 @@ You have the entire Clojure toolbox at your disposal to make changes. Use plain 
 
 ### Suspense Integration (Stable)
 
-Reseda supports [Suspense for Data Fetching](https://reactjs.org/docs/concurrent-mode-suspense.html) even in React Stable (16.13), even though it's technically not supported. 
+Reseda supports [Suspense for Data Fetching](https://reactjs.org/docs/concurrent-mode-suspense.html) even in React Stable (16.13), even though it's technically not supported.
 
 This allows you to avoid a whole bunch of asynchronous code by allowing React to suspend rendering if some remote value hasn't arrived yet.
 
@@ -154,14 +154,14 @@ The magic happens you combine a Suspending with a React Suspense Boundary:
 ```clojure
 
 (defnc RemoteName []
- ;; using a trailing * for reader clarity -- 
+ ;; using a trailing * for reader clarity --
  ;; this is a Suspending and you need to deref it
  (let [data* (reseda.react/useStore store :data)]
    ;; notice the @ that derefs the Suspending
    [:div "The remote data is: " @data*]))
 
 (defnc Root []
- ;; see note about Suspense boundaries 
+ ;; see note about Suspense boundaries
  ;; -- you cannot have them in the same component that suspends
  [React/Suspense {:fallback (hx/f [:div "Loading..."])}
   [RemoteName]])
@@ -197,10 +197,10 @@ To avoid this, wrap the `Suspending` value with a `useCachedSuspending` hook lik
 
 ```clojure
 (defnc SearchList []
- (let [[results* loading?] (-> (reseda.react/useStore store :results) 
+ (let [[results* loading?] (-> (reseda.react/useStore store :results)
                                (reseda.react/useCachedSuspending))]
    [SearchBox {:show-spinner loading?
-               :on-change 
+               :on-change
                (fn [text]
                 (swap! backing-store :results (fetch-new-results text)))}]
    [React/Suspense
@@ -250,7 +250,7 @@ While all the examples so far were dealing with global atoms and stores, you can
 ```clojure
 (defnc ComplexComponent []
  (let [backing-ref (React/useRef (atom {})
-       backing (.-current backing-ref) 
+       backing (.-current backing-ref)
        store-ref (React/useRef (reseda.state/new-store backing)))
        store (.-current store-ref)]
     [ReadOnlyComponent {:store store}
@@ -266,7 +266,7 @@ The separation of store and backing also makes it clear if a component is just r
 
 Due to the way React works, you need to keep in mind a few things:
 
-#### Selector functions 
+#### Selector functions
 
 Selector functions should have a consistent identity, (i.e. not re-created every render), otherwise you may go into a render-loop.
 
@@ -302,7 +302,7 @@ You cannot have a Suspense boundary inside the component that does the Suspendin
 
 ## Demo
 
-There's various demos at [src/reseda/demo](src/reseda/demo). You can follow along at https://reseda.orestis.gr or run `clojure -A:demo:shadow-cljs watch demo`
+There's various demos at [src/reseda/demo](src/reseda/demo). You can follow along at https://reseda.orestis.gr or run `clojure -M:demo:shadow-cljs watch demo`
 
 ## License
 

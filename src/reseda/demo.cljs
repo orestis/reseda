@@ -2,31 +2,29 @@
   (:require
    [reseda.demo.util :refer [$]]
    [reseda.demo.bmi :as bmi]
-   [reseda.demo.nasa-apod :as nasa-apod]
+   ;[reseda.demo.nasa-apod :as nasa-apod]
    [reseda.demo.lifecycle :as lifecycle]
-   [reseda.demo.transitions :as transitions]
+   ;[reseda.demo.transitions :as transitions]
    ["react-dom" :as react-dom]))
 
 
-(def react-experimental?
-;  false
-  true
-  #_(boolean react-dom/unstable_createRoot))
+(def react-18? false)
 
 
 (defn react-root [el]
-  (if react-experimental?
-    (react-dom/unstable_createRoot el)
+  (if react-18?
+    (react-dom/createRoot el)
     el))
 
 (defn react-render [root component]
-  (if react-experimental?
+  (if react-18?
     (.render root component)
     (react-dom/render component root)))
 
 (defn Main []
   ($ "main" nil
      ($ "header" nil ($ "h1" nil "Reseda Demos"))
+     #_
      ($ "article" nil
         ($ transitions/TransitionsDemo)
         ($ transitions/TransitionsDemoStore))
@@ -36,6 +34,7 @@
      ($ "article" nil
         ($ bmi/StoreDemo))
      ($ "hr")
+     #_
      ($ "article" nil
         ($ nasa-apod/NasaApodDemo))))
 
