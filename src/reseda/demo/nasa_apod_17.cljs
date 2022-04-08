@@ -1,7 +1,7 @@
 (ns reseda.demo.nasa-apod-17
   (:require [reseda.demo.util :refer [$] :as util]
             [reseda.state :as rs]
-            [reseda.react :as rr :refer [useStore]]
+            [reseda.react :as rr :refer [useStore useCachedSuspending]]
             [cljs-bean.core :refer [bean]]
             ["react" :as react]))
 
@@ -53,22 +53,24 @@
              :apod (fetch-apod new-date)))))
 
 (defn DatePicker []
-  (let [current-date (useStore app-store :date)]
+  (let [current-date (useStore app-store :date)
+        [_ isPending] (useCachedSuspending (useStore app-store :apod))]
     ($ "div" #js {:style #js {:display "flex"
                               :justifyContent "space-between"
                               :alignItems "center"}}
        ($ "button" #js {:onClick #(date-button-clicked current-date -1)}
           "Previous Day")
-       ($ "strong" #js {:style {}#_(when isPending
+       ($ "strong" #js {:style (when isPending
                                  #js {:opacity "50%"})}
           (str (date->query current-date)))
        ($ "button" #js {:onClick #(date-button-clicked current-date +1)}
           "Next Day"))))
 
 (defn ApodMedia [props]
-  (let [{:keys [suspense-url url media_type]} (bean props)]
+  (let [{:keys [suspense-url url media_type loading-media]} (bean props)]
     (case media_type
-      "image" ($ "img" #js {:style #js {:width "100%"}
+      "image" ($ "img" #js {:style #js {:width "100%"
+                                        :opacity (if loading-media 0.1 1)}
                             :src @suspense-url})
       "video" ($ "iframe" #js {:src url
                                :type "text/html"
@@ -79,13 +81,16 @@
 
 
 (defn ApodComponent [props]
-  (let [apod (:apod (bean props))]
-    ($ "article" #js {:style #js {:width "100%"}}
+  (let [{:keys [apod loading]} (bean props)
+        [suspense-url loading-media] (useCachedSuspending (:suspense-url apod))]
+    ($ "article" #js {:style #js {:width "100%"
+                                  :opacity (if loading 0.5 1)}}
        ($ "h4" nil (:title apod))
        ($ "section" nil
           ($ "figure" nil
              ($ ApodMedia #js {:url (:url apod)
-                               :suspense-url (:suspense-url apod)
+                               :suspense-url suspense-url
+                               :loading-media loading-media
                                :media_type (:media_type apod)})
              ($ "figcaption" nil
                 (:date apod) " "
@@ -93,8 +98,9 @@
           ($ "p" nil (:explanation apod))))))
 
 (defn ApodLoader []
-  (let [apod (useStore app-store :apod)]
-    ($ ApodComponent #js {:apod @apod})))
+  (let [[apod loading] (useCachedSuspending (useStore app-store :apod))]
+    ($ ApodComponent #js {:apod @apod
+                          :loading loading})))
 
 
 (defn NasaApodDemo []
