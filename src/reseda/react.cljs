@@ -182,3 +182,8 @@
     [(.-current last-realized-ref) (.-current is-pending)]))
 
 (def useSuspending useCachedSuspending)
+
+(defn deref* [v]
+  (if (instance? Suspending v)
+    (deref v)
+    v))

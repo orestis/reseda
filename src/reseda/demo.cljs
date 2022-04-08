@@ -6,15 +6,18 @@
    [reseda.demo.lifecycle :as lifecycle]
    [reseda.demo.wikipedia :as wikipedia]
    ;[reseda.demo.transitions :as transitions]
-   ["react-dom" :as react-dom]))
+   [clojure.string :as string]
+   ["react-dom" :as react-dom]
+   ["react-dom/client" :as react-dom-client]))
 
 
-(def react-18? false)
+(def react-18? (string/starts-with? (.-version react-dom)
+                                    "18."))
 
 
 (defn react-root [el]
   (if react-18?
-    (react-dom/createRoot el)
+    (react-dom-client/createRoot el)
     el))
 
 (defn react-render [root component]

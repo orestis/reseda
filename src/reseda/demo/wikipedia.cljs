@@ -1,10 +1,10 @@
 (ns reseda.demo.wikipedia
-  (:require
-   [reseda.demo.util :refer [$]]
-   [reseda.state :refer [new-store]]
-   [reseda.react :refer [useStore]]
-   ["react" :as react]
-   [cljs-bean.core :refer [->clj]]))
+  (:require ["react" :as react]
+            [cljs-bean.core :refer [->clj bean]]
+            [clojure.string :as string]
+            [reseda.demo.util :refer [$]]
+            [reseda.react :refer [useStore deref*]]
+            [reseda.state :refer [new-store]]))
 
 (defonce data (atom {}))
 (defonce store (new-store data))
@@ -26,25 +26,34 @@
          (reseda.react/suspending-value (fetch-wiki query))))
 
 (defn SearchInput [props]
-  ($ "div" nil
-     ($ "input" #js {:type "search"
-                     :value (str (useStore store :query))
-                     :onChange (fn [e]
-                                    (let [q (-> e .-target .-value)]
-                                      (swap! data assoc :query q)
-                                      (fetch-wiki! q)))})))
+  (let [start-transition (:start-transition (bean props))]
+    ($ "div" nil
+       ($ "input" #js {:type "search"
+                       :value (str (useStore store :query))
+                       :onChange (fn [e]
+                                   (let [q (-> e .-target .-value)]
+                                     (swap! data assoc :query q)
+                                     #_(fetch-wiki! q)
+                                     (start-transition #(fetch-wiki! q))))}))))
 
 (defn SearchResults [props]
-  (when-let [results (useStore store :results)]
-    ($ "ul" nil
-       (for [r @results]
-         ($ "li" nil (:title r))))))
+  (let [results (react/useDeferredValue (useStore store :results))
+        loading (:loading (bean props))
+        query (useStore store :query)
+        results (deref* results)]
+      (if (and (not (seq results)) 
+               (not (string/blank? query)))
+          ($ "div" nil "No results")
+          ($ "ul" #js {}
+             (for [r results]
+                  ($ "li" #js {:key (:title r)
+                               :style #js {:opacity (if loading 0.5 1.0)}}
+                     (:title r)))))))
 
 (defn WikiSearchDemo [_props]
-  (useStore store :stable)
-  ($ "section" nil
-     ($ "h2" nil "Wikipedia Search")
-     ($ SearchInput)
-     ($ react/Suspense #js {:fallback ($ "div" nil "Fetching...")}
-        ($ SearchResults))
-     #_($ LifcycleCounters)))
+  (let [[is-pending startTransition] (react/useTransition)]
+    ($ "section" nil
+       ($ "h2" nil "Wikipedia Search")
+       ($ SearchInput #js {:start-transition startTransition})
+       ($ react/Suspense #js {:fallback ($ "div" nil "Fetching...")}
+          ($ SearchResults #js {:loading is-pending})))))
