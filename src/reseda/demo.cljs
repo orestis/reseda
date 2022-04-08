@@ -2,7 +2,7 @@
   (:require
    [reseda.demo.util :refer [$]]
    [reseda.demo.bmi :as bmi]
-   ;[reseda.demo.nasa-apod :as nasa-apod]
+   [reseda.demo.nasa-apod-17 :as nasa-apod]
    [reseda.demo.lifecycle :as lifecycle]
    ;[reseda.demo.transitions :as transitions]
    ["react-dom" :as react-dom]))
@@ -34,7 +34,6 @@
      ($ "article" nil
         ($ bmi/StoreDemo))
      ($ "hr")
-     #_
      ($ "article" nil
         ($ nasa-apod/NasaApodDemo))))
 
