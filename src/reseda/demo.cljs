@@ -5,6 +5,7 @@
    [reseda.demo.nasa-apod-17 :as nasa-apod]
    [reseda.demo.lifecycle :as lifecycle]
    [reseda.demo.wikipedia :as wikipedia]
+   [reseda.demo.pokemon :as pokemon]
    ;[reseda.demo.transitions :as transitions]
    [clojure.string :as string]
    ["react-dom" :as react-dom]
@@ -28,6 +29,8 @@
 (defn Main []
   ($ "main" nil
      ($ "header" nil ($ "h1" nil "Reseda Demos"))
+     ($ "article" nil
+        ($ pokemon/PokemonDemo))
      ($ "article" nil
         ($ wikipedia/WikiSearchDemo))
      #_

@@ -162,7 +162,7 @@
         (set! (.-current is-pending) true)
         (force-render!)))))
 
-(defn useCachedSuspending
+(defn useCachedSuspending17
   "Given a Suspending object, return the version of it that was last realized, and a boolean
    that indicates whether a new value is on the way. Can be used for a similar effect to useTransition"
   [^Suspending value]
@@ -180,6 +180,16 @@
      (identical? (.-current current-ref) value)
       (update-refs value current-ref last-realized-ref is-pending force-render! mounted-ref))
     [(.-current last-realized-ref) (.-current is-pending)]))
+
+(defn useCachedSuspending18 [^Suspending value]
+  (let [deferred (react/useDeferredValue value)
+        pending (not (identical? deferred value))]
+    [deferred pending]))
+
+(defn useCachedSuspending [^Suspending value]
+  (if (.-useDeferredValue react)
+    (useCachedSuspending18 value)
+    (useCachedSuspending17 value)))
 
 (def useSuspending useCachedSuspending)
 
