@@ -7,8 +7,8 @@
             ["react" :as react]
             ["@testing-library/react" :as rtl]))
 
-(t/use-fixtures :each 
-                {:after rtl/cleanup})
+(t/use-fixtures :each
+  {:after rtl/cleanup})
 
 (defn $
   ([el]
@@ -19,11 +19,10 @@
 (defn ValueRender [js-props]
   (let [{:keys [store selector f]} (.-props js-props)
         value (rr/useStore store selector)]
-    #_(js/console.log "store selector" store selector value)
     ($ "div" nil
        (f value))))
 
-(defn render-store 
+(defn render-store
   ([store selector] (render-store store selector str))
   ([store selector f]
    ($ ValueRender #js {:props {:store store
@@ -40,80 +39,107 @@
 
 (deftest use-store-keywords
   (testing "useStore can use selector keywords"
-    (let [state (atom {:v 1})
-          store (rs/new-store state)
-          c (render-store store :v)]
+    (t/async
+     done!
+     (let [state (atom {:v 1})
+           store (rs/new-store state)
+           c (render-store store :v)]
 
-      (rtl/render c)
-      (is (= (-> (query-by-text "1")
-                 node-text) "1"))
-
-      (swap! state update :v inc)
-      (is (= (-> (query-by-text "2")
-                 node-text) "2")))))
+       (rtl/render c)
+       (is (= (-> (query-by-text "1")
+                  node-text) "1"))
+       (p/try
+         (rtl/act #(swap! state update :v inc))
+         (is (= (-> (query-by-text "2")
+                    node-text) "2"))
+         (p/finally
+           (done!)))))))
 
 (deftest use-store-vectors
   (testing "useStore can use vectors"
-    (let [state (atom {:v {:v 1}})
-          store (rs/new-store state)
-          c (render-store store [:v :v])]
-      (rtl/render c)
-      (is (= (-> (query-by-text "1")
-                 (node-text)) "1"))
+    (t/async
+     done!
+     (let [state (atom {:v {:v 1}})
+           store (rs/new-store state)
+           c (render-store store [:v :v])]
+       (rtl/render c)
+       (is (= (-> (query-by-text "1")
+                  (node-text)) "1"))
 
-      (swap! state update-in [:v :v] inc)
-      (is (= (-> (query-by-text "2")
-                 (node-text)) "2")) )))
+       (p/try
+         (rtl/act #(swap! state update-in [:v :v] inc))
+         (is (= (-> (query-by-text "2")
+                    (node-text)) "2"))
+         (p/finally (done!)))))))
 
 (deftest use-store-equality
   (testing "clojure equality means we don't re-render"
-    (let [state (atom {:v [1 2 3]})
-          store (rs/new-store state)
-          renders (atom 0)
-          f (fn [v] (swap! renders inc) (str v))
-          c (render-store store :v f)]
-      (rtl/render c)
-      (is (= @renders 1))
-      (swap! state assoc :v (conj [1 2] 3))
-      (is (= @renders 1)))))
+    (t/async
+     done!
+     (let [state (atom {:v [1 2 3]})
+           store (rs/new-store state)
+           renders (atom 0)
+           f (fn [v] (swap! renders inc) (str v))
+           c (render-store store :v f)]
+       (rtl/render c)
+       (is (= @renders 1))
+       (p/try
+         (rtl/act #(swap! state assoc :v [1 2 3 4]))
+         (is (= @renders 2))
+         (rtl/act #(swap! state assoc :v (conj [1 2 3] 4)))
+         (is (= @renders 2))
+         (p/finally (done!)))))))
 
 (deftest use-store-functions
   (testing "equality is based on the return value of the selector"
-    (let [state (atom {:v "a"})
-          store (rs/new-store state)
-          selector (comp string/lower-case :v)
-          renders (atom 0)
-          f (fn [v] (swap! renders inc) (str v))
-          c (render-store store selector f)]
+    (t/async
+     done!
+     (let [state (atom {:v "a"})
+           store (rs/new-store state)
+           selector (comp string/lower-case :v)
+           renders (atom 0)
+           f (fn [v] (swap! renders inc) (str v))
+           c (render-store store selector f)]
 
-      (rtl/render c)
-      (is (= (-> (query-by-text "a")
-                 node-text) "a"))
-      (is (= @renders 1))
+       (rtl/render c)
+       (is (= (-> (query-by-text "a")
+                  node-text) "a"))
+       (is (= @renders 1))
 
-      (swap! state assoc :v "A")
-      (is (= (-> (query-by-text "a")
-                 node-text) "a"))
-      (is (= @renders 1)))))
+       (p/try
+         (rtl/act #(swap! state assoc :v "b"))
+         (is (= (-> (query-by-text "b")
+                    node-text) "b"))
+         (is (= @renders 2))
+         (rtl/act #(swap! state assoc :v "B"))
+         (is (= (-> (query-by-text "b")
+                    node-text) "b"))
+         (is (= @renders 2))
+         (p/finally (done!)))))))
 
 
-(deftest lifecycle 
-  (let [state (atom {:v 1})
-        store (rs/new-store state)
-        selector :v
-        renders (atom 0)
-        f (fn [v] (swap! renders inc) (str v))
-        c (render-store store selector f)]
-      (swap! state update :v inc)
-      (is (= @renders 0) "no renders until component is actually mounted")
-      (let [rtl-fns (rtl/render c)]
-        (is (= @renders 1) "first render")
-        (swap! state update :v inc)
-        (is (= @renders 2) "render on update")
-        (.unmount rtl-fns)
-        (is (= @renders 2) "no render on unmount")
-        (swap! state update :v inc)
-        (is (= @renders 2) "no render after unmount"))))
+(deftest lifecycle
+  (t/async
+   done!
+   (let [state (atom {:v 1})
+         store (rs/new-store state)
+         selector :v
+         renders (atom 0)
+         f (fn [v] (swap! renders inc) (str v))
+         c (render-store store selector f)]
+     (p/try
+       (rtl/act #(swap! state update :v inc))
+       (is (= @renders 0) "no renders until component is actually mounted")
+       (let [rtl-fns (rtl/render c)]
+         (p/do
+           (is (= @renders 1) "first render")
+           (rtl/act #(swap! state update :v inc))
+           (is (= @renders 2) "render on update")
+           (rtl/act #(.unmount rtl-fns))
+           (is (= @renders 2) "no render on unmount")
+           (rtl/act #(swap! state update :v inc))
+           (is (= @renders 2) "no render after unmount")))
+       (p/finally (done!))))))
 
 
 (defn make-promise []
@@ -141,110 +167,110 @@
 
 (deftest suspending-resolve
   (t/async
-    done!
-    (let [{:keys [promise resolve]} (make-promise)
-          susp (rr/suspending-value promise)]
-      (is (= false (rr/-resolved? susp)))
-      (is (= false (rr/-rejected? susp)))
-      (is (= false (realized? susp)))
-      (try
-        (deref susp)
-        (catch :default x
-          (is (= true (identical? x promise)))))
-      
-      (resolve :foo)
-      (p/try
-        promise
-        (is (= true (rr/-resolved? susp)))
-        (is (= false (rr/-rejected? susp)))
-        (is (= true (realized? susp)))
-        (is (= :foo (deref susp)))
-        (p/finally 
-          (done!))))))
+   done!
+   (let [{:keys [promise resolve]} (make-promise)
+         susp (rr/suspending-value promise)]
+     (is (= false (rr/-resolved? susp)))
+     (is (= false (rr/-rejected? susp)))
+     (is (= false (realized? susp)))
+     (try
+       (deref susp)
+       (catch :default x
+         (is (= true (identical? x promise)))))
+
+     (resolve :foo)
+     (p/try
+       promise
+       (is (= true (rr/-resolved? susp)))
+       (is (= false (rr/-rejected? susp)))
+       (is (= true (realized? susp)))
+       (is (= :foo (deref susp)))
+       (p/finally
+         (done!))))))
 
 (deftest suspending-reject
   (t/async
-    done!
-    (let [{:keys [promise reject]} (make-promise)
-          susp (rr/suspending-value promise)
-          err (js/Error. "foo")]
-      (is (= false (rr/-resolved? susp)))
-      (is (= false (rr/-rejected? susp)))
-      (is (= false (realized? susp)))
-      
-      (reject err)
-      (p/try
-        promise
-        (p/catch js/Error x
-          (is (= false (rr/-resolved? susp)))
-          (is (= true (rr/-rejected? susp)))
-          (is (= true (realized? susp)))
-          (is (thrown-with-msg? js/Error
+   done!
+   (let [{:keys [promise reject]} (make-promise)
+         susp (rr/suspending-value promise)
+         err (js/Error. "foo")]
+     (is (= false (rr/-resolved? susp)))
+     (is (= false (rr/-rejected? susp)))
+     (is (= false (realized? susp)))
+
+     (reject err)
+     (p/try
+       promise
+       (p/catch js/Error x
+         (is (= false (rr/-resolved? susp)))
+         (is (= true (rr/-rejected? susp)))
+         (is (= true (realized? susp)))
+         (is (thrown-with-msg? js/Error
                                #"foo"
                                (deref susp)))
-          (is (= err x)))
-        (p/finally 
-          (done!))))))
+         (is (= err x)))
+       (p/finally
+         (done!))))))
 
 (deftest suspending-noerror-resolve
   (t/async
-    done!
-    (let [{:keys [promise resolve]} (make-promise)
-          susp (rr/suspending-value-noerror promise)]
-      (is (= false (rr/-resolved? susp)))
-      (is (= false (rr/-rejected? susp)))
-      (is (= false (realized? susp)))
-      (try
-        (deref susp)
-        (catch :default x
-          (is (= true (identical? x promise)))))
-      
-      (resolve :foo)
-      (p/try
-        promise
-        (is (= true (rr/-resolved? susp)))
-        (is (= false (rr/-rejected? susp)))
-        (is (= true (realized? susp)))
-        (is (= :foo (deref susp)))
-        (p/finally 
-          (done!))))))
+   done!
+   (let [{:keys [promise resolve]} (make-promise)
+         susp (rr/suspending-value-noerror promise)]
+     (is (= false (rr/-resolved? susp)))
+     (is (= false (rr/-rejected? susp)))
+     (is (= false (realized? susp)))
+     (try
+       (deref susp)
+       (catch :default x
+         (is (= true (identical? x promise)))))
+
+     (resolve :foo)
+     (p/try
+       promise
+       (is (= true (rr/-resolved? susp)))
+       (is (= false (rr/-rejected? susp)))
+       (is (= true (realized? susp)))
+       (is (= :foo (deref susp)))
+       (p/finally
+         (done!))))))
 
 (deftest suspending-noerror-reject
   (t/async
-    done!
-    (let [{:keys [promise reject]} (make-promise)
-          susp (rr/suspending-value-noerror promise)
-          err (js/Error. "foo")]
-      (is (= false (rr/-resolved? susp)))
-      (is (= false (rr/-rejected? susp)))
-      (is (= false (realized? susp)))
-      
-      (reject err)
+   done!
+   (let [{:keys [promise reject]} (make-promise)
+         susp (rr/suspending-value-noerror promise)
+         err (js/Error. "foo")]
+     (is (= false (rr/-resolved? susp)))
+     (is (= false (rr/-rejected? susp)))
+     (is (= false (realized? susp)))
 
-      (is (= false (rr/-resolved? susp)))
-      (is (= false (rr/-rejected? susp)))
-      (is (= false (realized? susp)))
+     (reject err)
 
-      (try
-        (deref susp)
-        (catch :default x
-          (is (= true (identical? x promise)))))
-      (done!))))
+     (is (= false (rr/-resolved? susp)))
+     (is (= false (rr/-rejected? susp)))
+     (is (= false (realized? susp)))
+
+     (try
+       (deref susp)
+       (catch :default x
+         (is (= true (identical? x promise)))))
+     (done!))))
 
 (deftest suspending-integration
   (t/async
-    done!
-    (let [{:keys [promise resolve]} (make-promise)
-          susp (rr/suspending-value promise)
-          c (render-susp susp)]
-      (rtl/render c)
-      (is (= (-> (query-by-text "FB")
-                 node-text) "FB"))
-      (p/try
-        (rtl/act #(do (resolve "done")
-                      promise))
-        (rtl/waitFor #(query-by-text "done"))
-        (is (= (-> (query-by-text "done")
-                   node-text) "done"))
-        (p/finally
-          (done!))))))
+   done!
+   (let [{:keys [promise resolve]} (make-promise)
+         susp (rr/suspending-value promise)
+         c (render-susp susp)]
+     (rtl/render c)
+     (is (= (-> (query-by-text "FB")
+                node-text) "FB"))
+     (p/try
+       (rtl/act #(do (resolve "done")
+                     promise))
+       (rtl/waitFor #(query-by-text "done"))
+       (is (= (-> (query-by-text "done")
+                  node-text) "done"))
+       (p/finally
+         (done!))))))
