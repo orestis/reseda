@@ -1,5 +1,5 @@
 {:paths ["src"]
- :deps {nano-id/nano-id {:mvn/version "1.0.0"}}
+ :deps {}
  :aliases
 {:test
  {:extra-deps {athos/kitchen-async {:sha "1f28eab4ef7126e0b8b6fd8d8887beeab7430fea"
