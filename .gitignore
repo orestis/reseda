@@ -3,6 +3,7 @@ node_modules/
 .shadow-cljs/
 .clj-kondo/.cache
 .lsp
+out/
 public/js/
 public-test/
 .DS_Store

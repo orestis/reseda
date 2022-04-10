@@ -10,6 +10,12 @@
   :ci {:target :karma
        :compiler-options {:infer-externs :auto}
        :output-to "public-test/ci.js"}
+  
+  :ssr {:target :node-script
+        :main reseda.demo.ssr/main
+        :output-to "out/ssr/main.js"
+        :devtools {:before-load-async reseda.demo.ssr/stop
+                   :after-load reseda.demo.ssr/start}}
 
   :demo {:target :browser
          :output-dir "public/js"
