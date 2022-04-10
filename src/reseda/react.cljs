@@ -127,6 +127,10 @@
   (suspending-resolved nil))
 
 
+(defn suspending-forever []
+  (let [p (js/Promise. (fn [_ _]))]
+    (suspending-value p)))
+
 (defn- useForceRender []
   (let [[_ set-state] (react/useState 0)
         force-render! #(set-state inc)]

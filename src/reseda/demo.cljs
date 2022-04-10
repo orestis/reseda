@@ -6,6 +6,7 @@
    [reseda.demo.lifecycle :as lifecycle]
    [reseda.demo.wikipedia :as wikipedia]
    [reseda.demo.pokemon :as pokemon]
+   [reseda.demo.pokemon2 :as pokemon2]
    ;[reseda.demo.transitions :as transitions]
    [clojure.string :as string]
    ["react-dom" :as react-dom]
@@ -30,13 +31,14 @@
   ($ "main" nil
      ($ "header" nil ($ "h1" nil "Reseda Demos"))
      ($ "article" nil
+        ($ pokemon2/PokemonDemo))
+     ($ "article" nil
         ($ pokemon/PokemonDemo))
      ($ "article" nil
         ($ wikipedia/WikiSearchDemo))
-     #_
-     ($ "article" nil
-        ($ transitions/TransitionsDemo)
-        ($ transitions/TransitionsDemoStore))
+     #_($ "article" nil
+          ($ transitions/TransitionsDemo)
+          ($ transitions/TransitionsDemoStore))
      ($ "hr")
      ($ "article" nil ($ lifecycle/LifecycleDemo))
      ($ "hr")
