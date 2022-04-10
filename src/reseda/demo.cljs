@@ -4,9 +4,8 @@
    [reseda.demo.bmi :as bmi]
    [reseda.demo.nasa-apod-17 :as nasa-apod]
    [reseda.demo.lifecycle :as lifecycle]
-   [reseda.demo.wikipedia :as wikipedia]
+   ;[reseda.demo.wikipedia :as wikipedia]
    [reseda.demo.pokemon :as pokemon]
-   ;[reseda.demo.transitions :as transitions]
    [clojure.string :as string]
    ["react-dom" :as react-dom]
    #_
@@ -34,12 +33,9 @@
      ($ "header" nil ($ "h1" nil (str "Reseda Demos, React version " (.-version react-dom))))
      ($ "article" nil
         ($ pokemon/PokemonDemo))
-     ($ "article" nil
-        ($ wikipedia/WikiSearchDemo))
      #_
      ($ "article" nil
-        ($ transitions/TransitionsDemo)
-        ($ transitions/TransitionsDemoStore))
+        ($ wikipedia/WikiSearchDemo))
      ($ "hr")
      ($ "article" nil ($ lifecycle/LifecycleDemo))
      ($ "hr")

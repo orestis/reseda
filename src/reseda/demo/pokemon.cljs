@@ -36,6 +36,7 @@
         "Next")))
   )
 
+#_
 (defn PokemonDetail [props]
   (let [[pok* set-pok*] (react/useState first-pokemon)
         [is-pending start-transition] (react/useTransition)
@@ -49,6 +50,7 @@
 (defonce data (atom first-pokemon))
 (defonce store (new-store data))
 
+#_
 (defn PokemonDetailStore [props]
   (let [pok* (reseda.react/useStore store identity)
         set-pok* (fn [x] (reset! data x))
@@ -77,7 +79,10 @@
      ($ "aside" nil "Inspired by https://www.youtube.com/watch?v=Kd0d-9RQHSw")
      ($ "hr")
      ($ "h3" nil "Pokemon Demo (useState + useTransition)")
+     ($ "p" nil "Not available in React 17")
+     #_
      ($ react/Suspense #js {:fallback ($ "div" nil "Fetching pokemeon...")}
+
         ($ PokemonDetail))
      ($ "hr")
      ($ "h3" nil "Pokemon Demo (useStore + useDeferredValue)")
@@ -85,5 +90,7 @@
         ($ PokemonDetailStoreDeferred))
      ($ "hr")
      ($ "h3" nil "Pokemon Demo (useStore + useTransition)")
+     ($ "p" nil "Not available in React 17")
+     #_
      ($ react/Suspense #js {:fallback ($ "div" nil "Fetching pokemeon...")}
         ($ PokemonDetailStore))))
