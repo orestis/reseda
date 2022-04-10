@@ -9,6 +9,7 @@
    ;[reseda.demo.transitions :as transitions]
    [clojure.string :as string]
    ["react-dom" :as react-dom]
+   #_
    ["react-dom/client" :as react-dom-client]))
 
 
@@ -18,6 +19,8 @@
 
 (defn react-root [el]
   (if react-18?
+    (throw (ex-info "This branch only supports React 17" {:version (.-version react-dom)}))
+    #_
     (react-dom-client/createRoot el)
     el))
 
@@ -28,7 +31,7 @@
 
 (defn Main []
   ($ "main" nil
-     ($ "header" nil ($ "h1" nil "Reseda Demos"))
+     ($ "header" nil ($ "h1" nil (str "Reseda Demos, React version " (.-version react-dom))))
      ($ "article" nil
         ($ pokemon/PokemonDemo))
      ($ "article" nil
