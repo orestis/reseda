@@ -7,6 +7,8 @@
             ["react" :as react]
             ["@testing-library/react" :as rtl]))
 
+(js/console.log "Testing under React" (.-version react))
+
 (t/use-fixtures :each
   {:after rtl/cleanup})
 
@@ -37,109 +39,91 @@
   (rtl/getNodeText node))
 
 
+(defn act [cb]
+  (rtl/act (fn [] (cb) js/undefined)))
+
 (deftest use-store-keywords
   (testing "useStore can use selector keywords"
-    (t/async
-     done!
-     (let [state (atom {:v 1})
-           store (rs/new-store state)
-           c (render-store store :v)]
+    (let [state (atom {:v 1})
+          store (rs/new-store state)
+          c (render-store store :v)]
 
-       (rtl/render c)
-       (is (= (-> (query-by-text "1")
-                  node-text) "1"))
-       (p/try
-         (rtl/act #(swap! state update :v inc))
-         (is (= (-> (query-by-text "2")
-                    node-text) "2"))
-         (p/finally
-           (done!)))))))
+      (rtl/render c)
+      (is (= (-> (query-by-text "1")
+                 node-text) "1"))
+      (act #(swap! state update :v inc))
+      (is (= (-> (query-by-text "2")
+                 node-text) "2"))
+      )))
 
 (deftest use-store-vectors
   (testing "useStore can use vectors"
-    (t/async
-     done!
-     (let [state (atom {:v {:v 1}})
-           store (rs/new-store state)
-           c (render-store store [:v :v])]
-       (rtl/render c)
-       (is (= (-> (query-by-text "1")
-                  (node-text)) "1"))
+    (let [state (atom {:v {:v 1}})
+          store (rs/new-store state)
+          c (render-store store [:v :v])]
+      (rtl/render c)
+      (is (= (-> (query-by-text "1")
+                 (node-text)) "1"))
 
-       (p/try
-         (rtl/act #(swap! state update-in [:v :v] inc))
-         (is (= (-> (query-by-text "2")
-                    (node-text)) "2"))
-         (p/finally (done!)))))))
+      (act #(swap! state update-in [:v :v] inc))
+      (is (= (-> (query-by-text "2")
+                 (node-text)) "2")))))
 
 (deftest use-store-equality
   (testing "clojure equality means we don't re-render"
-    (t/async
-     done!
-     (let [state (atom {:v [1 2 3]})
-           store (rs/new-store state)
-           renders (atom 0)
-           f (fn [v] (swap! renders inc) (str v))
-           c (render-store store :v f)]
-       (rtl/render c)
-       (is (= @renders 1))
-       (p/try
-         (rtl/act #(swap! state assoc :v [1 2 3 4]))
-         (is (= @renders 2))
-         (rtl/act #(swap! state assoc :v (conj [1 2 3] 4)))
-         (is (= @renders 2))
-         (p/finally (done!)))))))
+    (let [state (atom {:v [1 2 3]})
+          store (rs/new-store state)
+          renders (atom 0)
+          f (fn [v] (swap! renders inc) (str v))
+          c (render-store store :v f)]
+      (rtl/render c)
+      (is (= @renders 1))
+      (act #(swap! state assoc :v [1 2 3 4]))
+      (is (= @renders 2))
+      (act #(swap! state assoc :v (conj [1 2 3] 4)))
+      (is (= @renders 2)))))
 
 (deftest use-store-functions
   (testing "equality is based on the return value of the selector"
-    (t/async
-     done!
-     (let [state (atom {:v "a"})
-           store (rs/new-store state)
-           selector (comp string/lower-case :v)
-           renders (atom 0)
-           f (fn [v] (swap! renders inc) (str v))
-           c (render-store store selector f)]
+    (let [state (atom {:v "a"})
+          store (rs/new-store state)
+          selector (comp string/lower-case :v)
+          renders (atom 0)
+          f (fn [v] (swap! renders inc) (str v))
+          c (render-store store selector f)]
 
-       (rtl/render c)
-       (is (= (-> (query-by-text "a")
-                  node-text) "a"))
-       (is (= @renders 1))
+      (rtl/render c)
+      (is (= (-> (query-by-text "a")
+                 node-text) "a"))
+      (is (= @renders 1))
 
-       (p/try
-         (rtl/act #(swap! state assoc :v "b"))
-         (is (= (-> (query-by-text "b")
-                    node-text) "b"))
-         (is (= @renders 2))
-         (rtl/act #(swap! state assoc :v "B"))
-         (is (= (-> (query-by-text "b")
-                    node-text) "b"))
-         (is (= @renders 2))
-         (p/finally (done!)))))))
+      (act #(swap! state assoc :v "b"))
+      (is (= (-> (query-by-text "b")
+                 node-text) "b"))
+      (is (= @renders 2))
+      (act #(swap! state assoc :v "B"))
+      (is (= (-> (query-by-text "b")
+                 node-text) "b"))
+      (is (= @renders 2)))))
 
 
 (deftest lifecycle
-  (t/async
-   done!
-   (let [state (atom {:v 1})
-         store (rs/new-store state)
-         selector :v
-         renders (atom 0)
-         f (fn [v] (swap! renders inc) (str v))
-         c (render-store store selector f)]
-     (p/try
-       (rtl/act #(swap! state update :v inc))
-       (is (= @renders 0) "no renders until component is actually mounted")
-       (let [rtl-fns (rtl/render c)]
-         (p/do
-           (is (= @renders 1) "first render")
-           (rtl/act #(swap! state update :v inc))
-           (is (= @renders 2) "render on update")
-           (rtl/act #(.unmount rtl-fns))
-           (is (= @renders 2) "no render on unmount")
-           (rtl/act #(swap! state update :v inc))
-           (is (= @renders 2) "no render after unmount")))
-       (p/finally (done!))))))
+  (let [state (atom {:v 1})
+        store (rs/new-store state)
+        selector :v
+        renders (atom 0)
+        f (fn [v] (swap! renders inc) (str v))
+        c (render-store store selector f)]
+    (act #(swap! state update :v inc))
+    (is (= @renders 0) "no renders until component is actually mounted")
+    (let [rtl-fns (rtl/render c)]
+      (is (= @renders 1) "first render")
+      (act #(swap! state update :v inc))
+      (is (= @renders 2) "render on update")
+      (act #(.unmount rtl-fns))
+      (is (= @renders 2) "no render on unmount")
+      (act #(swap! state update :v inc))
+      (is (= @renders 2) "no render after unmount"))))
 
 
 (defn make-promise []
@@ -151,7 +135,6 @@
 
 (defn SuspendImpl [js-props]
   (let [{:keys [susp f]} (.-props js-props)]
-    (js/console.log susp f)
     (f @susp)))
 
 (defn SuspenseRender [js-props]
