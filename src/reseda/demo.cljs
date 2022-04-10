@@ -5,7 +5,7 @@
    [reseda.demo.nasa-apod-17 :as nasa-apod]
    [reseda.demo.lifecycle :as lifecycle]
    ;[reseda.demo.wikipedia :as wikipedia]
-   [reseda.demo.pokemon :as pokemon]
+   ;[reseda.demo.pokemon :as pokemon]
    [clojure.string :as string]
    ["react-dom" :as react-dom]
    #_
@@ -31,6 +31,7 @@
 (defn Main []
   ($ "main" nil
      ($ "header" nil ($ "h1" nil (str "Reseda Demos, React version " (.-version react-dom))))
+     #_
      ($ "article" nil
         ($ pokemon/PokemonDemo))
      #_
