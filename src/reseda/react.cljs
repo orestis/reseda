@@ -6,7 +6,7 @@
    ["react" :as react]))
 
 ;; borrowed from hx
-(defn useValue
+(defn- useValue
   "Caches `x`. When a new `x` is passed in, returns new `x` only if it is
   not structurally equal to the previous `x`.
   Useful for optimizing `<-effect` et. al. when you have two values that might
@@ -67,7 +67,9 @@
       :else (throw (.-promise this)))))
 
 
-(defn suspending-value [promise]
+(defn suspending-value 
+  "Given a promise, return a Suspending that will suspend until the promise is resolved."
+  [promise]
   (let [s (Suspending. false nil promise nil)]
     (.then promise
            (fn [value]
@@ -91,7 +93,12 @@
     s))
 
 
-(defn suspending-image [url]
+(defn suspending-image
+  "Return a Suspending that will wrap an image URL. Can be used to make sure a Suspending component
+   is shown only when the image is also shown. 
+   
+   Note: naive implementation, will never time out."
+  [url]
   (let [img (js/Image.)
         p (js/Promise.
            (fn [resolve reject]
@@ -127,7 +134,9 @@
   (suspending-resolved nil))
 
 
-(defn suspending-forever []
+(defn suspending-forever 
+  "Convenience, return a Suspending that will never resolve."
+  []
   (let [p (js/Promise. (fn [_ _]))]
     (suspending-value p)))
 
@@ -135,11 +144,6 @@
   (let [[_ set-state] (react/useState 0)
         force-render! #(set-state inc)]
     force-render!))
-
-(def __id (atom 0))
-(defn- next-id []
-  (let [id (swap! __id inc)]
-    id))
 
 (defn- update-refs [^Suspending susp current-ref last-realized-ref is-pending force-render! mounted-ref]
   ;; the susp has changed, keep the current version around in a ref
@@ -166,10 +170,7 @@
         (set! (.-current is-pending) true)
         (force-render!)))))
 
-(defn useCachedSuspending17
-  "Given a Suspending object, return the version of it that was last realized, and a boolean
-   that indicates whether a new value is on the way. Can be used for a similar effect to useTransition"
-  [^Suspending value]
+(defn useCachedSuspending17 [^Suspending value]
   ;; keep track of the last realized suspending
   (let [last-realized-ref (react/useRef value)
         current-ref (react/useRef value)
@@ -190,14 +191,22 @@
         pending (not (identical? deferred value))]
     [deferred pending]))
 
-(defn useCachedSuspending [^Suspending value]
+(defn useCachedSuspending 
+  "Return a vector of [deferred loading], with deferred being the last resolved Suspending 
+   and loading an boolean showing if a new value is on the way.
+   Components that `useCachedSuspending` will only suspend once, during the initial
+   fetching of the data."
+  [^Suspending value]
   (if (.-useDeferredValue react)
     (useCachedSuspending18 value)
     (useCachedSuspending17 value)))
 
-(def useSuspending useCachedSuspending)
+(def ^:deprecated useSuspending 
+  "Alias for useCachedSuspending" useCachedSuspending)
 
-(defn deref* [v]
+(defn deref* 
+  "Deref v, iff it's a Suspending, otherwise return v."
+  [v]
   (if (instance? Suspending v)
     (deref v)
     v))
