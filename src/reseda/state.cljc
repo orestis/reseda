@@ -1,5 +1,8 @@
-(ns reseda.state
-  (:require [nano-id.core :refer [nano-id]]))
+(ns reseda.state)
+
+
+(defn nano-id []
+  (str (random-uuid)))
 
 ;; TODO: expose subscriptions
 ;; TODO: timing?
@@ -10,8 +13,8 @@
   (-get-value [this selector] [this backing selector])
 
   (destroy [this] "Remove all references to subscriptions and the underlying watchable.")
-  (subscribe [this selector on-change] 
-             "Subscribe to changes in the underlying watchable, using a selector function.
+  (subscribe [this selector on-change]
+    "Subscribe to changes in the underlying watchable, using a selector function.
              Whenever the old value and the new value (as returned by the selector) differ (based on Clojure equality),
              call on-change with the new value. Return a unique key that can be passed to `unsubscribe`")
   (unsubscribe [this k] "Destroy the subscription under `key`"))
@@ -28,12 +31,12 @@
     (doseq [[selector on-change] (vals @subs)]
       (let [oldv (-get-value this old-state selector)
             newv (-get-value this new-state selector)]
-        (when-not (= oldv newv) 
+        (when-not (= oldv newv)
           (on-change newv)))))
 
   (-get-value [this selector]
     (-get-value this @backing selector))
-  
+
   (-get-value [this x selector]
     (if (vector? selector)
       (get-in x selector)

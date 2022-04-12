@@ -2,25 +2,28 @@
   (:require
    [reseda.demo.util :refer [$]]
    [reseda.demo.bmi :as bmi]
-   [reseda.demo.nasa-apod :as nasa-apod]
+   [reseda.demo.nasa-apod-17 :as nasa-apod]
    [reseda.demo.lifecycle :as lifecycle]
-   [reseda.demo.transitions :as transitions]
-   ["react-dom" :as react-dom]))
+   [reseda.demo.wikipedia :as wikipedia]
+   [reseda.demo.pokemon :as pokemon]
+   [reseda.demo.pokemon2 :as pokemon2]
+   ;[reseda.demo.transitions :as transitions]
+   [clojure.string :as string]
+   ["react-dom" :as react-dom]
+   ["react-dom/client" :as react-dom-client]))
 
 
-(def react-experimental?
-;  false
-  true
-  #_(boolean react-dom/unstable_createRoot))
+(def react-18? (string/starts-with? (.-version react-dom)
+                                    "18."))
 
 
 (defn react-root [el]
-  (if react-experimental?
-    (react-dom/unstable_createRoot el)
+  (if react-18?
+    (react-dom-client/createRoot el)
     el))
 
 (defn react-render [root component]
-  (if react-experimental?
+  (if react-18?
     (.render root component)
     (react-dom/render component root)))
 
@@ -28,8 +31,14 @@
   ($ "main" nil
      ($ "header" nil ($ "h1" nil "Reseda Demos"))
      ($ "article" nil
-        ($ transitions/TransitionsDemo)
-        ($ transitions/TransitionsDemoStore))
+        ($ pokemon2/PokemonDemo))
+     ($ "article" nil
+        ($ pokemon/PokemonDemo))
+     ($ "article" nil
+        ($ wikipedia/WikiSearchDemo))
+     #_($ "article" nil
+          ($ transitions/TransitionsDemo)
+          ($ transitions/TransitionsDemoStore))
      ($ "hr")
      ($ "article" nil ($ lifecycle/LifecycleDemo))
      ($ "hr")

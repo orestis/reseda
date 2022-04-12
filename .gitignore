@@ -1,6 +1,9 @@
 node_modules/
 .cpcache
 .shadow-cljs/
+.clj-kondo/.cache
+.lsp
+out/
 public/js/
 public-test/
 .DS_Store

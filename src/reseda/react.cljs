@@ -1,10 +1,12 @@
 (ns reseda.react
   (:require
    [reseda.state :as rs]
+   ["use-sync-external-store/shim" :refer [useSyncExternalStore]]
+   ;["use-sync-external-store/shim/with-selector" :refer [useSyncExternalStoreWithSelector]]
    ["react" :as react]))
 
 ;; borrowed from hx
-(defn useValue
+(defn- useValue
   "Caches `x`. When a new `x` is passed in, returns new `x` only if it is
   not structurally equal to the previous `x`.
   Useful for optimizing `<-effect` et. al. when you have two values that might
@@ -23,52 +25,21 @@
       x')))
 
 
-;; copy the approach of https://github.com/facebook/react/blob/master/packages/use-subscription/src/useSubscription.js#L71
 (defn useStore
   "React hook that will re-render the component whenever the value returned by `selector` changes.
   NOTE: `selector` should be a stable function (not defined in-line, e.g. with
   useCallback) or keyword to avoid infinite re-renders. `selector` can also be a vector for `get-in`"
-  [store selector]
-  (let [selector (useValue selector)
-        [state setState] (react/useState (fn [] {:store store
-                                                 :selector selector
-                                                 :value (rs/-get-value store selector)}))
-        value-to-return (atom (:value state))]
-    (when (or (not= store (:store state))
-              (not= selector (:selector state)))
-      (reset! value-to-return (rs/-get-value store selector))
-      (setState {:store store
-                 :selector selector
-                 :value @value-to-return}))
-    (react/useDebugValue @value-to-return)
-    (react/useEffect
-     (fn []
-       (let [did-unsubscribe (atom false)
-             check-for-updates
-             (fn [value]
-               (when-not @did-unsubscribe
-                 (setState
-                  (fn [prev-state]
-                    (cond
-                        ;; stale subscription; store or selector changed
-                        ;; do not render for stale subscription, wait for
-                        ;; another render to be scheduled
-                      (or (not= store (:store prev-state))
-                          (not= selector (:selector prev-state)))                      
-                      prev-state
-                      ;; value is the same (store handles equality so here just check for identical)
-                      (identical? (:value prev-state) value)
-                      prev-state
-
-                      :else (assoc prev-state :value value))))))
-
-             k (rs/subscribe store selector check-for-updates)]
-         (check-for-updates @value-to-return)
-         (fn unsubscribe []
-           (reset! did-unsubscribe true)
-           (rs/unsubscribe store k))))
-     #js [store selector])
-    @value-to-return))
+  [^rs/IStore store selector]
+  (let [selector' (useValue selector)
+        subscribe (react/useCallback (fn [cb]
+                                       (let [k (rs/subscribe store selector' cb)]
+                                         (fn unsub []
+                                           (rs/unsubscribe store k))))
+                                     #js [selector'])
+        get-snapshot (react/useCallback #(rs/-get-value store selector') #js [selector'])
+        value (useSyncExternalStore subscribe get-snapshot)]
+    (react/useDebugValue value)
+    value))
 
 
 (defprotocol ISuspending
@@ -96,7 +67,9 @@
       :else (throw (.-promise this)))))
 
 
-(defn suspending-value [promise]
+(defn suspending-value 
+  "Given a promise, return a Suspending that will suspend until the promise is resolved."
+  [promise]
   (let [s (Suspending. false nil promise nil)]
     (.then promise
            (fn [value]
@@ -120,7 +93,12 @@
     s))
 
 
-(defn suspending-image [url]
+(defn suspending-image
+  "Return a Suspending that will wrap an image URL. Can be used to make sure a Suspending component
+   is shown only when the image is also shown. 
+   
+   Note: naive implementation, will never time out."
+  [url]
   (let [img (js/Image.)
         p (js/Promise.
            (fn [resolve reject]
@@ -156,15 +134,16 @@
   (suspending-resolved nil))
 
 
+(defn suspending-forever 
+  "Convenience, return a Suspending that will never resolve."
+  []
+  (let [p (js/Promise. (fn [_ _]))]
+    (suspending-value p)))
+
 (defn- useForceRender []
   (let [[_ set-state] (react/useState 0)
         force-render! #(set-state inc)]
     force-render!))
-
-(def __id (atom 0))
-(defn- next-id []
-  (let [id (swap! __id inc)]
-    id))
 
 (defn- update-refs [^Suspending susp current-ref last-realized-ref is-pending force-render! mounted-ref]
   ;; the susp has changed, keep the current version around in a ref
@@ -191,10 +170,7 @@
         (set! (.-current is-pending) true)
         (force-render!)))))
 
-(defn useCachedSuspending
-  "Given a Suspending object, return the version of it that was last realized, and a boolean
-   that indicates whether a new value is on the way. Can be used for a similar effect to useTransition"
-  [^Suspending value]
+(defn useCachedSuspending17 [^Suspending value]
   ;; keep track of the last realized suspending
   (let [last-realized-ref (react/useRef value)
         current-ref (react/useRef value)
@@ -210,4 +186,27 @@
       (update-refs value current-ref last-realized-ref is-pending force-render! mounted-ref))
     [(.-current last-realized-ref) (.-current is-pending)]))
 
-(def useSuspending useCachedSuspending)
+(defn useCachedSuspending18 [^Suspending value]
+  (let [deferred (react/useDeferredValue value)
+        pending (not (identical? deferred value))]
+    [deferred pending]))
+
+(defn useCachedSuspending 
+  "Return a vector of [deferred loading], with deferred being the last resolved Suspending 
+   and loading an boolean showing if a new value is on the way.
+   Components that `useCachedSuspending` will only suspend once, during the initial
+   fetching of the data."
+  [^Suspending value]
+  (if (.-useDeferredValue react)
+    (useCachedSuspending18 value)
+    (useCachedSuspending17 value)))
+
+(def ^:deprecated useSuspending 
+  "Alias for useCachedSuspending" useCachedSuspending)
+
+(defn deref* 
+  "Deref v, iff it's a Suspending, otherwise return v."
+  [v]
+  (if (instance? Suspending v)
+    (deref v)
+    v))
