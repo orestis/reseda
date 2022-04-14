@@ -26,12 +26,21 @@ Happily accepting issues to discuss use cases, bugs, new features etc.
 
 See [Vision](./VISION.md) for the original vision and potential future additions.
 
+## React version compatibility
+
+Reseda is forwards compatible with React 18, and backwards compatible with React 17. 
+It should also work fine with React 16.8 (with hooks), but that's not a goal anymore.
+
 ## Usage
 
 Use `deps.edn` to get a reference to the latest commit, e.g.:
 
     {orestis/reseda {:git/url "https://github.com/orestis/reseda.git"
                      :sha "<latest commit>"}}
+
+Install [use-sync-external-store](https://www.npmjs.com/package/use-sync-external-store) from npm. 
+This is a compatibility shim that makes Reseda compatible with React 17, 
+but also takes advantage of React 18 native APIs if running under React 18.
 
 ## Getting Started
 
