@@ -125,7 +125,33 @@
       (act #(swap! state update :v inc))
       (is (= @renders 2) "no render after unmount"))))
 
-
+(deftest lifecycle-no-multi-renders
+  ;; this test crashes with infinite loops if the clojure
+  ;; equality semantics aren't respected in useStore
+  ;; we trigger this by creating a new CLJ object every
+  ;; time in the selector
+  (let [state (atom {:v {:foo :bar
+                         :count 0}})
+        store (rs/new-store state)
+        selector (fn [state]
+                   (let [{:keys [foo count]} (get state :v)]
+                     {:foo foo
+                      :count count}))
+        renders (atom 0)
+        f (fn [v] (swap! renders inc) (str v))
+        c (render-store store selector f)]
+    (act #(swap! state update-in [:v :count] inc))
+    (is (= @renders 0) "no renders until component is actually mounted")
+    (let [rtl-fns (rtl/render c)]
+      (is (= @renders 1) "first render")
+      (act #(swap! state update-in [:v :count] inc))
+      (is (= @renders 2) "render on update")
+      (act #(swap! state assoc-in [:v :foo] :bar))
+      (is (= @renders 2) "no render when selector yields equivalent value")
+      (act #(.unmount rtl-fns))
+      (is (= @renders 2) "no render on unmount")
+      (act #(swap! state update :v inc))
+      (is (= @renders 2) "no render after unmount"))))
 (defn make-promise []
   (let [fs (atom nil)
         p (js/Promise. (fn [resolve reject]
