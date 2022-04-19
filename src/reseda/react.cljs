@@ -1,8 +1,7 @@
 (ns reseda.react
   (:require
    [reseda.state :as rs]
-   ["use-sync-external-store/shim" :refer [useSyncExternalStore]]
-   ;["use-sync-external-store/shim/with-selector" :refer [useSyncExternalStoreWithSelector]]
+   ["use-sync-external-store/shim/with-selector" :refer [useSyncExternalStoreWithSelector]]
    ["react" :as react]))
 
 ;; borrowed from hx
@@ -30,14 +29,22 @@
   NOTE: `selector` should be a stable function (not defined in-line, e.g. with
   useCallback) or keyword to avoid infinite re-renders. `selector` can also be a vector for `get-in`"
   [^rs/IStore store selector]
-  (let [selector' (useValue selector)
+  (let [selector-clj (useValue selector)
+        selector-js (react/useCallback (fn [x]
+                                       (rs/-get-value store x selector-clj))
+                                     #js [store selector-clj])
         subscribe (react/useCallback (fn [cb]
-                                       (let [k (rs/subscribe store selector' cb)]
+                                       (let [k (rs/subscribe store selector-clj cb)]
                                          (fn unsub []
                                            (rs/unsubscribe store k))))
-                                     #js [selector'])
-        get-snapshot (react/useCallback #(rs/-get-value store selector') #js [selector'])
-        value (useSyncExternalStore subscribe get-snapshot)]
+                                     #js [store selector-clj])
+        get-snapshot (react/useCallback #(rs/-get-value store identity)
+                                        #js [store])
+        value (useSyncExternalStoreWithSelector subscribe 
+                                                get-snapshot
+                                                nil 
+                                                selector-js 
+                                                =)]
     (react/useDebugValue value)
     value))
 
